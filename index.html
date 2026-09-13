@@ -1200,13 +1200,13 @@ body:before{
     <h1 data-i18n="landing-hero-title">Konversi &amp; Upload<br>Audio ke Roblox</h1>
     <p data-i18n="landing-hero-sub">Ubah audio dari YouTube atau SoundCloud jadi aset siap pakai, langsung ke akun Roblox kamu dengan kecepatan dan amplifikasi custom.</p>
     <div class="landing-cta">
-      <button class="landing-cta-primary" onclick="enterApp()">
+            <a class="landing-cta-primary" id="discordLoginBtn2" href="#">
         <span data-i18n="landing-cta-start">Mulai Sekarang</span>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </button>
-      <button class="landing-cta-secondary" onclick="enterApp()">
+      </a>
+      <a class="landing-cta-secondary" id="discordLoginBtn3" href="#">
         <span data-i18n="landing-cta-discord">Gabung Discord</span>
-      </button>
+      </a>
     </div>
   </div>
  
@@ -2448,10 +2448,11 @@ body:before{
   // ===== Login Discord asli =====
   const DISCORD_CLIENT_ID = '1548548841614082209';
   const DISCORD_REDIRECT_URI = 'https://dyl-studio-backend.vercel.app/api/discord-callback';
-  const loginBtn = document.getElementById('discordLoginBtn');
-  if (loginBtn) {
-    loginBtn.href = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify`;
-  }
+   const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify`;
+  ['discordLoginBtn', 'discordLoginBtn2', 'discordLoginBtn3'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.href = oauthUrl;
+  });
 
   function replaceUsernameEverywhere(newName) {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
