@@ -1188,10 +1188,10 @@ body:before{
         <span class="active" onclick="setLang(this,'ID')">ID</span>
         <span onclick="setLang(this,'EN')">EN</span>
       </div>
-      <button class="landing-login-btn" onclick="enterApp()">
+            <a class="landing-login-btn" id="discordLoginBtn" href="#">
         <svg fill="currentColor" viewBox="0 0 24 24" width="16" height="16"><path d="M20 4.4a17.6 17.6 0 00-4.3-1.3l-.2.4c1.6.4 2.5.9 3.4 1.6-1.4-.7-2.9-1.2-4.5-1.4-.2 0-.4-.1-.6-.1-2.4-.3-4.8-.3-7.2 0-.2 0-.4.1-.6.1-1.6.2-3.1.7-4.5 1.4.9-.7 1.9-1.2 3.5-1.6l-.2-.4A17.6 17.6 0 004 4.4C2.3 7.9 1.6 11.4 1.9 14.8c1.8 1.3 3.6 2.1 5.3 2.6l.6-1c-.9-.3-1.8-.8-2.6-1.3.2.1.4.3.6.4 3.1 1.4 6.5 1.4 9.6 0 .2-.1.4-.3.6-.4-.8.5-1.7 1-2.6 1.3l.6 1c1.7-.5 3.5-1.3 5.3-2.6.3-3.9-.6-7.4-2.3-10.4zM8.4 13c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7c.8 0 1.5.8 1.5 1.7S9.3 13 8.4 13zm7.2 0c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7c.8 0 1.5.8 1.5 1.7s-.7 1.7-1.5 1.7z"/></svg>
         <span data-i18n="landing-login-btn">Masuk dengan Discord</span>
-      </button>
+      </a>
     </div>
   </nav>
  
@@ -1272,10 +1272,10 @@ body:before{
           <span onclick="setLang(this,'EN')">EN</span>
         </div>
         <div class="profile-wrap">
-          <div class="avatar" onclick="toggleProfileMenu()">FP</div>
+          <div class="avatar" onclick="toggleProfileMenu()" id="userAvatarInitials">FP</div>
           <div class="profile-menu" id="profileMenu">
             <div class="p-head">
-              <div class="p-avatar">FP</div>
+              <div class="p-avatar" id="userAvatarInitialsMenu">FP</div>
               <div>
                 <div class="p-name">fadilputra322</div>
                 <div class="p-mail">Free Plan</div>
@@ -2442,8 +2442,59 @@ body:before{
     }, 90);
   }
  
-  refreshHistoryVisibility();
+    refreshHistoryVisibility();
   applyLanguage(currentLang);
+
+  // ===== Login Discord asli =====
+  const DISCORD_CLIENT_ID = '1548548841614082209';
+  const DISCORD_REDIRECT_URI = 'https://dyl-studio-backend.vercel.app/api/discord-callback';
+  const loginBtn = document.getElementById('discordLoginBtn');
+  if (loginBtn) {
+    loginBtn.href = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify`;
+  }
+
+  function replaceUsernameEverywhere(newName) {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node;
+    while (node = walker.nextNode()) {
+      if (node.nodeValue.includes('fadilputra322')) {
+        node.nodeValue = node.nodeValue.replace(/fadilputra322/g, newName);
+      }
+    }
+  }
+
+  function applyDiscordLogin(user) {
+    replaceUsernameEverywhere(user.username);
+    const initials = user.username.slice(0, 2).toUpperCase();
+    [document.getElementById('userAvatarInitials'), document.getElementById('userAvatarInitialsMenu')].forEach(el => {
+      if (!el) return;
+      if (user.avatar) {
+        el.style.backgroundImage = `url(${user.avatar})`;
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+        el.textContent = '';
+      } else {
+        el.textContent = initials;
+      }
+    });
+  }
+
+  function checkDiscordLogin() {
+    const params = new URLSearchParams(window.location.search);
+    const discordParam = params.get('discord');
+    if (discordParam) {
+      try {
+        const decoded = JSON.parse(atob(decodeURIComponent(discordParam)));
+        applyDiscordLogin(decoded);
+        enterApp();
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {
+        console.error('Gagal membaca data login Discord:', e);
+      }
+    }
+  }
+
+  checkDiscordLogin();
 </script>
  
 </body>
