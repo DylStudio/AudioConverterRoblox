@@ -749,7 +749,7 @@ body:before{
     transition:opacity .16s ease .02s,max-width .22s ease;
   }
   .sidebar:hover .nav-label{opacity:1;max-width:160px;}
-  .main{margin:0;margin-left:76px;width:calc(100% - 76px);max-width:none;}
+  .main{margin:0 auto 0 76px;width:100%;max-width:1240px;}
 }
 
 
@@ -1092,12 +1092,136 @@ body:before{
   from{opacity:0;transform:translateY(-10px);background:rgba(98,228,213,.1);}
   to{opacity:1;transform:translateY(0);}
 }
-
+/* ===== Landing / cover page ===== */
+.hidden{display:none !important;}
+.landing-page{
+  min-height:100vh;background:var(--bg-base);color:var(--text-primary);
+  font-family:'Inter',sans-serif;
+}
+.landing-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  max-width:1180px;margin:0 auto;padding:26px 24px;
+}
+.landing-logo{font-family:'Fraunces',serif;font-size:20px;letter-spacing:.02em;}
+.landing-logo span{color:var(--accent);}
+.landing-nav-right{display:flex;align-items:center;gap:14px;}
+.landing-login-btn{
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,#ffc35d,#f2a52e);color:#171109;
+  border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;
+  cursor:pointer;transition:filter .15s;
+}
+.landing-login-btn:hover{filter:brightness(1.06);}
+.landing-hero{
+  max-width:760px;margin:70px auto 90px;padding:0 24px;text-align:center;
+}
+.landing-hero .hero-eyebrow{justify-content:center;}
+.landing-hero h1{
+  font-family:'Fraunces',serif;font-size:44px;line-height:1.15;letter-spacing:-.02em;
+  margin:16px 0 18px;
+}
+.landing-hero p{color:var(--text-muted);font-size:15px;line-height:1.6;max-width:560px;margin:0 auto 32px;}
+.landing-cta{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
+.landing-cta-primary{
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,#ffc35d,#f2a52e);color:#171109;
+  border:none;border-radius:10px;padding:13px 24px;font-size:14px;font-weight:700;
+  cursor:pointer;transition:filter .15s;
+}
+.landing-cta-primary:hover{filter:brightness(1.06);}
+.landing-cta-secondary{
+  background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text-primary);
+  border-radius:10px;padding:13px 24px;font-size:14px;font-weight:600;cursor:pointer;
+  transition:background .15s;
+}
+.landing-cta-secondary:hover{background:rgba(255,255,255,.08);}
+.landing-features{max-width:1080px;margin:0 auto;padding:0 24px 90px;text-align:center;}
+.landing-features h2{
+  font-family:'Fraunces',serif;font-size:26px;margin-bottom:36px;letter-spacing:-.01em;
+}
+.landing-features-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:left;
+}
+.landing-feature-card{
+  background:var(--bg-panel);border:1px solid var(--border);border-radius:16px;padding:24px;
+}
+.lf-icon{
+  width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+  margin-bottom:16px;
+}
+.lf-icon svg{width:19px;height:19px;}
+.lf-icon.lf-accent{background:var(--accent-soft);color:var(--accent);}
+.lf-icon.lf-teal{background:var(--teal-soft);color:var(--teal);}
+.lf-title{font-size:15px;font-weight:700;margin-bottom:8px;}
+.lf-sub{font-size:13px;color:var(--text-faint);line-height:1.55;}
+@media (max-width:780px){
+  .landing-hero h1{font-size:32px;}
+  .landing-features-grid{grid-template-columns:1fr;}
+  .landing-nav{flex-wrap:wrap;gap:12px;}
+}
 </style>
 </head>
 <body>
 
-<div class="app">
+<div class="landing-page" id="landingPage">
+  <nav class="landing-nav">
+    <div class="landing-logo">DYL <span>STUDIO</span></div>
+    <div class="landing-nav-right">
+      <div class="lang-toggle">
+        <span class="active" onclick="setLang(this,'ID')">ID</span>
+        <span onclick="setLang(this,'EN')">EN</span>
+      </div>
+      <button class="landing-login-btn" onclick="enterApp()">
+        <svg fill="currentColor" viewBox="0 0 24 24" width="16" height="16"><path d="M20 4.4a17.6 17.6 0 00-4.3-1.3l-.2.4c1.6.4 2.5.9 3.4 1.6-1.4-.7-2.9-1.2-4.5-1.4-.2 0-.4-.1-.6-.1-2.4-.3-4.8-.3-7.2 0-.2 0-.4.1-.6.1-1.6.2-3.1.7-4.5 1.4.9-.7 1.9-1.2 3.5-1.6l-.2-.4A17.6 17.6 0 004 4.4C2.3 7.9 1.6 11.4 1.9 14.8c1.8 1.3 3.6 2.1 5.3 2.6l.6-1c-.9-.3-1.8-.8-2.6-1.3.2.1.4.3.6.4 3.1 1.4 6.5 1.4 9.6 0 .2-.1.4-.3.6-.4-.8.5-1.7 1-2.6 1.3l.6 1c1.7-.5 3.5-1.3 5.3-2.6.3-3.9-.6-7.4-2.3-10.4zM8.4 13c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7c.8 0 1.5.8 1.5 1.7S9.3 13 8.4 13zm7.2 0c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7c.8 0 1.5.8 1.5 1.7s-.7 1.7-1.5 1.7z"/></svg>
+        <span data-i18n="landing-login-btn">Masuk dengan Discord</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="landing-hero">
+    <div class="hero-eyebrow"><span class="eyebrow-dot"></span>DYL AUDIO WORKSPACE</div>
+    <h1 data-i18n="landing-hero-title">Konversi &amp; Upload<br>Audio ke Roblox</h1>
+    <p data-i18n="landing-hero-sub">Ubah audio dari YouTube atau SoundCloud jadi aset siap pakai, langsung ke akun Roblox kamu dengan kecepatan dan amplifikasi custom.</p>
+    <div class="landing-cta">
+      <button class="landing-cta-primary" onclick="enterApp()">
+        <span data-i18n="landing-cta-start">Mulai Sekarang</span>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+      <button class="landing-cta-secondary" onclick="enterApp()">
+        <span data-i18n="landing-cta-discord">Gabung Discord</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="landing-features">
+    <h2 data-i18n="landing-features-title">Fitur Utama</h2>
+    <div class="landing-features-grid">
+      <div class="landing-feature-card">
+        <div class="lf-icon lf-accent">
+          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M13 3L4 14h6l-1 7 9-11h-6l1-7z"/></svg>
+        </div>
+        <div class="lf-title" data-i18n="landing-feature-1-title">Convert Otomatis</div>
+        <div class="lf-sub" data-i18n="landing-feature-1-sub">Download dan convert audio dari YouTube &amp; SoundCloud dengan pengaturan kecepatan dan amplifikasi.</div>
+      </div>
+      <div class="landing-feature-card">
+        <div class="lf-icon lf-teal">
+          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"/></svg>
+        </div>
+        <div class="lf-title" data-i18n="landing-feature-2-title">Upload Langsung</div>
+        <div class="lf-sub" data-i18n="landing-feature-2-sub">Audio yang sudah dikonversi langsung diupload ke akun Roblox Creator kamu.</div>
+      </div>
+      <div class="landing-feature-card">
+        <div class="lf-icon lf-accent">
+          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 19V9m6 10V5m6 14v-7"/></svg>
+        </div>
+        <div class="lf-title" data-i18n="landing-feature-3-title">Pantau Status</div>
+        <div class="lf-sub" data-i18n="landing-feature-3-sub">Lacak status moderasi audio kamu secara real-time: Menunggu, Diterima, atau Ditolak.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app hidden" id="appRoot">
   <aside class="sidebar">
     <div class="nav-btn hamburger-btn" id="hamburgerBtn" title="Menu" onclick="toggleSidebarNav()">
       <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -1636,13 +1760,19 @@ body:before{
     document.getElementById('sidebarNav').classList.toggle('open');
   }
 
+  // ===== Landing page / login simulation =====
+  function enterApp() {
+    document.getElementById('landingPage').classList.add('hidden');
+    document.getElementById('appRoot').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }
+
   // ===== Logout =====
   function doLogout() {
-    const msg = currentLang === 'EN'
-      ? 'You have been logged out (simulation — not connected to a real login system yet).'
-      : 'Kamu telah keluar (simulasi — belum tersambung ke sistem login asli).';
-    alert(msg);
     document.getElementById('profileMenu').classList.remove('show');
+    document.getElementById('appRoot').classList.add('hidden');
+    document.getElementById('landingPage').classList.remove('hidden');
+    window.scrollTo(0, 0);
   }
 
   // ===== Page tab switching =====
@@ -1758,6 +1888,18 @@ body:before{
       'nav-riwayat': 'Riwayat',
       'nav-akun': 'Akun',
       'nav-pengaturan': 'Pengaturan',
+      'landing-login-btn': 'Masuk dengan Discord',
+      'landing-hero-title': 'Konversi & Upload<br>Audio ke Roblox',
+      'landing-hero-sub': 'Ubah audio dari YouTube atau SoundCloud jadi aset siap pakai, langsung ke akun Roblox kamu dengan kecepatan dan amplifikasi custom.',
+      'landing-cta-start': 'Mulai Sekarang',
+      'landing-cta-discord': 'Gabung Discord',
+      'landing-features-title': 'Fitur Utama',
+      'landing-feature-1-title': 'Convert Otomatis',
+      'landing-feature-1-sub': 'Download dan convert audio dari YouTube & SoundCloud dengan pengaturan kecepatan dan amplifikasi.',
+      'landing-feature-2-title': 'Upload Langsung',
+      'landing-feature-2-sub': 'Audio yang sudah dikonversi langsung diupload ke akun Roblox Creator kamu.',
+      'landing-feature-3-title': 'Pantau Status',
+      'landing-feature-3-sub': 'Lacak status moderasi audio kamu secara real-time: Menunggu, Diterima, atau Ditolak.',
       'hero-greeting': 'Selamat datang,',
       'hero-sub': 'Ubah audio favoritmu jadi aset siap pakai di Roblox, langsung dari satu dashboard.',
       'stat-connected-label': 'Akun Terhubung',
@@ -1844,6 +1986,18 @@ body:before{
       'nav-riwayat': 'History',
       'nav-akun': 'Account',
       'nav-pengaturan': 'Settings',
+      'landing-login-btn': 'Sign in with Discord',
+      'landing-hero-title': 'Convert &amp; Upload<br>Audio to Roblox',
+      'landing-hero-sub': 'Turn audio from YouTube or SoundCloud into ready-to-use assets, straight to your Roblox account with custom speed and amplification.',
+      'landing-cta-start': 'Get Started',
+      'landing-cta-discord': 'Join Discord',
+      'landing-features-title': 'Key Features',
+      'landing-feature-1-title': 'Auto Convert',
+      'landing-feature-1-sub': 'Download and convert audio from YouTube & SoundCloud with speed and amplification settings.',
+      'landing-feature-2-title': 'Direct Upload',
+      'landing-feature-2-sub': 'Converted audio is uploaded straight to your Roblox Creator account.',
+      'landing-feature-3-title': 'Track Status',
+      'landing-feature-3-sub': 'Track your audio moderation status in real time: Pending, Approved, or Rejected.',
       'hero-greeting': 'Welcome,',
       'hero-sub': 'Turn your favorite audio into ready-to-use Roblox assets, straight from one dashboard.',
       'stat-connected-label': 'Connected Accounts',
