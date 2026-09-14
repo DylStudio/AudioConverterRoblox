@@ -1780,8 +1780,25 @@ body:before{
       : 'Masukkan password test untuk simulasi upgrade:');
     
     if (inputPass === 'FADILPUTRA322') {
-      // Simulasi upgrade berhasil
+      // Hitung tanggal expired berdasarkan nama paket
+      const days = name.includes('7') ? 7 : (name.includes('30') ? 30 : 0);
+      const expireDate = new Date();
+      expireDate.setDate(expireDate.getDate() + days);
+      const expireLabel = expireDate.toLocaleDateString(currentLang === 'EN' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      // Update kartu Paket Aktif
       document.querySelector('.plan-card .stat-big').textContent = name;
+      const planSub = document.querySelector('.plan-card .stat-sub');
+      planSub.textContent = currentLang === 'EN' ? `Active until ${expireLabel}` : `Aktif sampai ${expireLabel}`;
+
+      // Set kuota jadi unlimited
+      quota = Infinity;
+      document.getElementById('quotaLeft').innerHTML = '∞';
+      document.querySelector('.quota-pill span').innerHTML = currentLang === 'EN'
+        ? `<b>∞</b> Unlimited conversions · ${name} plan active`
+        : `<b>∞</b> Konversi tanpa batas · Paket ${name} aktif`;
+
+      persistState();
       closeUpgradeModal();
       alert(currentLang === 'EN'
         ? `Test mode: Plan upgraded to ${name} successfully.`
@@ -2237,7 +2254,16 @@ let lastPreviewThumb = null;
  
   function removeCard(el) {
     if (confirm(currentLang === 'EN' ? 'Delete this conversion history?' : 'Hapus riwayat konversi ini?')) {
-      el.closest('.history-card').remove();
+      const card = el.closest('.history-card');
+      const linkText = card.querySelector('.h-link').textContent;
+      
+      // Hapus dari localStorage juga
+      let saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+      saved = saved.filter(h => h.link !== linkText);
+      localStorage.setItem('dyl_history', JSON.stringify(saved));
+      
+      card.remove();
+      refreshHistoryVisibility();
     }
   }
  
