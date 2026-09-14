@@ -2381,14 +2381,19 @@ let lastPreviewThumb = null;
     }
   }
  
-    function downloadHistoryAudio(btn) {
-    const url = btn.dataset.downloadUrl;
-    if (!url) {
-      alert(currentLang === 'EN' ? 'No audio file available for this entry.' : 'Belum ada file audio untuk entri ini.');
-      return;
-    }
-    window.open(url, '_blank');
+   function downloadHistoryAudio(btn) {
+  const url = btn.dataset.downloadUrl;
+  if (!url) {
+    alert(currentLang === 'EN' ? 'No audio file available for this entry.' : 'Belum ada file audio untuk entri ini.');
+    return;
   }
+  const card = btn.closest('.history-card');
+  const title = card.querySelector('.h-title')?.textContent?.trim() || 'Audio';
+  const safeTitle = title.replace(/[\\/:*?"<>|]/g, '').slice(0, 80);
+  const fileName = `Dyl Studio - ${safeTitle}.ogg`;
+  const finalUrl = url + (url.includes('?') ? '&' : '?') + 'name=' + encodeURIComponent(fileName);
+  window.open(finalUrl, '_blank');
+}
  
   function uploadHistoryToRoblox(btn) {
     const card = btn.closest('.history-card');
