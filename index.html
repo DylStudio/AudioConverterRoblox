@@ -2186,7 +2186,7 @@ let lastPreviewThumb = null;
     document.getElementById('advSettings').classList.toggle('open');
   }
  
-  function updateAdv(input, type) {
+    function updateAdv(input, type) {
     const val = input.value;
     if (type === 'speed') {
       document.getElementById('speedVal').textContent = val + 'x';
@@ -2201,6 +2201,8 @@ let lastPreviewThumb = null;
     const amp = document.getElementById('ampVal').textContent;
     const dur = document.getElementById('durVal').textContent;
     document.getElementById('advSummary').textContent = `Speed: ${speed}, Amplify: ${amp}, Maks: ${dur}`;
+
+    saveAdvSettings();
   }
  
   function applyPreset(chip, speed) {
@@ -2575,7 +2577,8 @@ let lastPreviewThumb = null;
       const linkText = hasFile ? fileName.textContent.replace('🎵 ', '') : url;
       const thumb = hasFile ? null : lastPreviewThumb;
       const fullDownloadUrl = CONVERT_API_BASE + data.downloadUrl;
-      addHistoryEntry(sourceLabel, title, linkText, true, thumb, null, fullDownloadUrl,
+      const resultDurLabel = data.durationSec ? formatDuration(Math.round(data.durationSec)) : null;
+      addHistoryEntry(sourceLabel, title, linkText, true, thumb, resultDurLabel, fullDownloadUrl,
         document.getElementById('speedVal').textContent,
         document.getElementById('ampVal').textContent,
         document.getElementById('durVal').textContent);
@@ -2585,19 +2588,6 @@ let lastPreviewThumb = null;
       clearUrlPreview();
       fileInput.value = '';
       fileChosen.classList.remove('show');
-
-      // Reset pengaturan lanjutan ke default
-      document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
-      document.querySelector('.preset-chip.default').classList.add('active');
-      const speedSlider = document.getElementById('speedSlider');
-      speedSlider.value = 2.3;
-      updateAdv(speedSlider, 'speed');
-      const ampSlider = document.getElementById('ampSlider');
-      ampSlider.value = 0;
-      updateAdv(ampSlider, 'amp');
-      const durSlider = document.querySelector('.slider-row input[type="range"][min="30"]');
-      durSlider.value = 300;
-      updateAdv(durSlider, 'dur');
 
       persistState();
     } catch (err) {
@@ -2741,6 +2731,7 @@ function loadPersistedState() {
   renderMonthlyHistory();
   updateTotalConvSub();
   checkExpiredHistory();
+  loadAdvSettings();
 }
 
   function persistState() {
@@ -2791,6 +2782,40 @@ function markCardExpired(card) {
 }
 
 setInterval(checkExpiredHistory, 30000);
+    function saveAdvSettings() {
+    try {
+      const speed = document.getElementById('speedSlider').value;
+      const amp = document.getElementById('ampSlider').value;
+      const durSlider = document.querySelector('.slider-row input[type="range"][min="30"]');
+      const dur = durSlider ? durSlider.value : 300;
+      localStorage.setItem('dyl_adv_settings', JSON.stringify({ speed, amp, dur }));
+    } catch (err) {
+      console.error('Gagal simpan pengaturan lanjutan:', err);
+    }
+  }
+
+  function loadAdvSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('dyl_adv_settings') || 'null');
+      if (!saved) return;
+
+      const speedSlider = document.getElementById('speedSlider');
+      speedSlider.value = saved.speed;
+      updateAdv(speedSlider, 'speed');
+
+      const ampSlider = document.getElementById('ampSlider');
+      ampSlider.value = saved.amp;
+      updateAdv(ampSlider, 'amp');
+
+      const durSlider = document.querySelector('.slider-row input[type="range"][min="30"]');
+      if (durSlider) {
+        durSlider.value = saved.dur;
+        updateAdv(durSlider, 'dur');
+      }
+    } catch (err) {
+      console.error('Gagal load pengaturan lanjutan:', err);
+    }
+  }
 </script>
  
 </body>
