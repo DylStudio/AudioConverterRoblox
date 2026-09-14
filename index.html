@@ -1299,16 +1299,17 @@ body:before{
       <div class="waveform" id="waveform"></div>
     </div>
  
+   <div class="stats-row acct-stats-row">
     <div class="stat-card acct-card">
-  <div class="label" data-i18n="stat-discord-label">Akun Discord</div>
-  <div class="acct-card-body">
-    <div class="acct-card-info">
-      <div class="acct-card-name">fadilputra322</div>
-      <span class="badge-linked" data-i18n="badge-connected">Terhubung</span>
+      <div class="label" data-i18n="stat-discord-label">Akun Discord</div>
+      <div class="acct-card-body">
+        <div class="acct-card-info">
+          <div class="acct-card-name">fadilputra322</div>
+          <span class="badge-linked" data-i18n="badge-connected">Terhubung</span>
+        </div>
+        <div class="acct-avatar platform-icon discord" id="discordAcctAvatar">D</div>
+      </div>
     </div>
-    <div class="acct-avatar platform-icon discord" id="discordAcctAvatar">D</div>
-  </div>
-</div>
  
       <div class="stat-card acct-card">
     <div class="label" data-i18n="stat-roblox-label">Akun Roblox</div>
@@ -1641,7 +1642,7 @@ body:before{
  
           <div class="connect-block">
             <div class="connect-header">
-              <div class="platform"><div class="platform-icon discord">D</div>Discord</div>
+              <div class="platform"><div class="platform-icon discord" id="discordAcctAvatarAkun">D</div>Discord</div>
               <button class="connect-toggle linked" onclick="toggleConnect(this,'Discord')">Terhubung</button>
             </div>
             <div class="connect-detail"><span data-i18n="connect-login-as">Login sebagai</span> <b>fadilputra322</b></div>
@@ -2478,7 +2479,13 @@ body:before{
  function applyDiscordLogin(user) {
   replaceUsernameEverywhere(user.username);
   const initials = user.username.slice(0, 2).toUpperCase();
-  [document.getElementById('userAvatarInitials'), document.getElementById('userAvatarInitialsMenu')].forEach(el => {
+  [
+    document.getElementById('userAvatarInitials'),
+    document.getElementById('userAvatarInitialsMenu'),
+    document.getElementById('discordAcctAvatar'),        // kartu di Beranda
+    document.getElementById('discordAcctAvatarAkun'),    // ikon kecil di halaman Akun
+    document.getElementById('userAvatarInitialsAkun')    // foto besar di halaman Akun
+  ].forEach(el => {
     if (!el) return;
     if (user.avatar) {
       el.style.backgroundImage = `url(${user.avatar})`;
