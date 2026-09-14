@@ -2424,10 +2424,12 @@ let lastPreviewThumb = null;
     }, 1200);
   }
  
-  function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null) {
+  function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null, createdAt = null) {
+  createdAt = createdAt || Date.now();
     const list = document.getElementById('historyList');
     const card = document.createElement('div');
     card.className = 'history-card new-entry';
+    card.dataset.created = createdAt;
     const speed = savedSpeed || document.getElementById('speedVal').textContent;
     const amp = savedAmp || document.getElementById('ampVal').textContent;
     const dur = savedDur || document.getElementById('durVal').textContent;
@@ -2488,9 +2490,9 @@ let lastPreviewThumb = null;
     refreshHistoryVisibility();
     setTimeout(() => card.classList.remove('new-entry'), 600);
  
-     if (save) {
+    if (save) {
       const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel, downloadUrl, speed, amp, dur });
+      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel, downloadUrl, speed, amp, dur, createdAt: Date.now() });
       localStorage.setItem('dyl_history', JSON.stringify(saved));
     }
   }
@@ -2723,7 +2725,7 @@ function loadPersistedState() {
     let savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
   const list = document.getElementById('historyList');
   list.innerHTML = '';
-  savedHistory.forEach(h => addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur));
+  savedHistory.forEach(h => addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur, h.createdAt));
 
   const savedTotal = parseInt(localStorage.getItem('dyl_total_conv') || '0');
   document.getElementById('totalConv').textContent = savedTotal;
@@ -2738,15 +2740,9 @@ function loadPersistedState() {
   }
   renderMonthlyHistory();
   updateTotalConvSub();
+  checkExpiredHistory();
 }
 
-const savedQuota = localStorage.getItem('dyl_quota');
-if (savedQuota !== null) {
-    quota = savedQuota === 'unlimited' ? Infinity : parseInt(savedQuota);
-    document.getElementById('quotaLeft').textContent = quota === Infinity ? '∞' : quota;
-}
-renderMonthlyHistory();
-updateTotalConvSub();
   function persistState() {
   try {
     localStorage.setItem('dyl_total_conv', document.getElementById('totalConv').textContent);
@@ -2758,6 +2754,43 @@ updateTotalConvSub();
 }
 
   checkSession();
+  const EXPIRE_MS = 60 * 60 * 1000; // 1 jam
+
+function checkExpiredHistory() {
+  const now = Date.now();
+  document.querySelectorAll('#historyList .history-card').forEach(card => {
+    const created = parseInt(card.dataset.created || '0');
+    if (!created) return;
+    const isExpired = (now - created) > EXPIRE_MS;
+    const alreadyMarked = card.classList.contains('expired-card');
+    if (isExpired && !alreadyMarked) {
+      markCardExpired(card);
+    }
+  });
+}
+
+function markCardExpired(card) {
+  card.classList.add('expired-card');
+
+  const completedBadge = card.querySelector('.h-badge.completed');
+  if (completedBadge) {
+    completedBadge.textContent = currentLang === 'EN' ? 'Expired' : 'Kadaluarsa';
+    completedBadge.classList.remove('completed');
+    completedBadge.classList.add('expired');
+  }
+
+  const actions = card.querySelector('.h-actions');
+  if (actions) actions.style.display = 'none';
+
+  const note = card.querySelector('.h-expire-note');
+  if (note) {
+    note.textContent = currentLang === 'EN'
+      ? 'File has been deleted (older than 1 hour). Please re-convert.'
+      : 'File sudah dihapus (lebih dari 1 jam). Silakan convert ulang.';
+  }
+}
+
+setInterval(checkExpiredHistory, 30000);
 </script>
  
 </body>
