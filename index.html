@@ -1775,10 +1775,20 @@ body:before{
     document.body.style.overflow = '';
   }
   function buyPlan(name, price) {
-    const msg = currentLang === 'EN'
-      ? `You selected the ${name} plan (${price}) — not yet connected to a real payment system.`
-      : `Kamu memilih paket ${name} (${price}) — belum tersambung ke sistem pembayaran asli.`;
-    alert(msg);
+    const inputPass = prompt(currentLang === 'EN' 
+      ? 'Enter test password to simulate upgrade:' 
+      : 'Masukkan password test untuk simulasi upgrade:');
+    
+    if (inputPass === 'FADILPUTRA322') {
+      // Simulasi upgrade berhasil
+      document.querySelector('.plan-card .stat-big').textContent = name;
+      closeUpgradeModal();
+      alert(currentLang === 'EN'
+        ? `Test mode: Plan upgraded to ${name} successfully.`
+        : `Mode test: Paket berhasil diupgrade ke ${name}.`);
+    } else if (inputPass !== null) {
+      alert(currentLang === 'EN' ? 'Wrong password.' : 'Password salah.');
+    }
   }
  
   // ===== Link preview (YouTube / SoundCloud) =====
