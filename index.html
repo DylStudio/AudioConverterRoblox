@@ -2630,14 +2630,40 @@ let lastPreviewThumb = null;
     const data = await res.json();
     applyDiscordLogin(data.user);
     updateRobloxUI(!!data.roblox, data.roblox ? data.roblox.roblox_user_id : '');
-    renderLinkedGroups(data.groups);
-    enterApp();
+    enterApp(); // pindah ke sini, supaya dashboard tetap muncul walau ada error di bawah
+    try {
+      renderLinkedGroups(data.groups);
+    } catch (groupErr) {
+      console.error('Gagal render linked groups:', groupErr);
+    }
     if (window.location.search) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   } catch (err) {
     console.error('Gagal cek sesi login:', err);
   }
+}
+
+function renderLinkedGroups(groups) {
+  const container = document.getElementById('linkedGroups');
+  if (!container) return;
+  const titleHtml = `<div class="linked-groups-title" data-i18n="linked-groups-title">Linked Groups</div>`;
+  if (!groups || groups.length === 0) {
+    container.innerHTML = titleHtml;
+    return;
+  }
+  const itemsHtml = groups.map(g => `
+    <div class="linked-group-item" data-group-id="${g.group_id}">
+      <div>
+        <div class="lg-name">${g.group_name}</div>
+        <div class="lg-meta">Group ID: ${g.group_id}</div>
+      </div>
+      <span class="lg-delete" onclick="removeLinkedGroup(this)">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
+      </span>
+    </div>
+  `).join('');
+  container.innerHTML = titleHtml + itemsHtml;
 }
   // ===== Sinkronisasi state asli (Roblox connect, history, total) =====
 function updateRobloxUI(connected, label) {
@@ -2696,6 +2722,15 @@ if (savedQuota !== null) {
 }
 renderMonthlyHistory();
 updateTotalConvSub();
+  function persistState() {
+  try {
+    localStorage.setItem('dyl_total_conv', document.getElementById('totalConv').textContent);
+    localStorage.setItem('dyl_monthly', JSON.stringify(monthlyData));
+    localStorage.setItem('dyl_quota', quota === Infinity ? 'unlimited' : quota);
+  } catch (err) {
+    console.error('Gagal menyimpan state:', err);
+  }
+}
 
   checkSession();
 </script>
