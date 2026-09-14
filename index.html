@@ -1312,19 +1312,19 @@ body:before{
       </div>
  
       <div class="stat-card acct-card">
-        <div class="label" data-i18n="stat-roblox-label">Akun Roblox</div>
-        <div class="acct-card-body">
-          <div class="acct-card-info">
-            <div class="acct-card-name">FADILPUTRA322</div>
-            <span class="badge-linked" data-i18n="badge-connected">Terhubung</span>
-          </div>
-          <div class="acct-avatar platform-icon roblox">R</div>
-        </div>
+    <div class="label" data-i18n="stat-roblox-label">Akun Roblox</div>
+    <div class="acct-card-body">
+      <div class="acct-card-info">
+        <div class="acct-card-name" id="robloxAcctName">Belum terhubung</div>
+        <span class="badge-linked" id="robloxAcctBadge" style="background:rgba(255,255,255,.08); color:var(--text-faint);">Belum terhubung</span>
       </div>
+      <div class="acct-avatar platform-icon roblox">R</div>
+    </div>
+  </div>
  
       <div class="stat-card">
         <div class="label" data-i18n="stat-total-label">Total Konversi</div>
-        <div class="stat-big" id="totalConv">124</div>
+        <div class="stat-big" id="totalConv">0</div>
         <div class="stat-sub" id="totalConvSub">0 bulan ini</div>
       </div>
  
@@ -1648,13 +1648,13 @@ body:before{
             <div class="connect-detail"><span data-i18n="connect-login-as">Login sebagai</span> <b>fadilputra322</b></div>
           </div>
  
-          <div class="connect-block">
-            <div class="connect-header">
-              <div class="platform"><div class="platform-icon roblox">R</div>Roblox</div>
-              <button class="connect-toggle linked" onclick="toggleConnect(this,'Roblox')">Terhubung</button>
-            </div>
-            <div class="connect-detail"><span data-i18n="connect-creator-acc">Akun kreator</span> <b>FADILPUTRA322</b></div>
-          </div>
+         <div class="connect-block">
+  <div class="connect-header">
+    <div class="platform"><div class="platform-icon roblox">R</div>Roblox</div>
+    <button class="connect-toggle" id="robloxConnectToggle" onclick="toggleConnect(this,'Roblox')">Hubungkan</button>
+  </div>
+  <div class="connect-detail" id="robloxConnectDetail">Belum ada akun Roblox yang terhubung</div>
+</div>
         </div>
       </div>
     </div>
@@ -1779,10 +1779,11 @@ body:before{
  
   // ===== Landing page / login simulation =====
   function enterApp() {
-    document.getElementById('landingPage').classList.add('hidden');
-    document.getElementById('appRoot').classList.remove('hidden');
-    window.scrollTo(0, 0);
-  }
+  document.getElementById('landingPage').classList.add('hidden');
+  document.getElementById('appRoot').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  loadPersistedState();
+}
  
   // ===== Logout =====
   function doLogout() {
@@ -2116,21 +2117,30 @@ body:before{
     renderMonthlyHistory();
     updateTotalConvSub();
     refreshHistoryVisibility();
+    
+    const robloxConnected = localStorage.getItem('dyl_roblox_connected') === '1';
+  updateRobloxUI(robloxConnected, localStorage.getItem('dyl_roblox_label') || '');
   }
  
   function toggleConnect(btn, platform) {
-    const linked = btn.classList.contains('linked');
-    const confirmMsg = currentLang === 'EN' ? `Disconnect ${platform} account?` : `Putuskan koneksi akun ${platform}?`;
-    if (linked) {
-      if (confirm(confirmMsg)) {
+  const linked = btn.classList.contains('linked');
+  const confirmMsg = currentLang === 'EN' ? `Disconnect ${platform} account?` : `Putuskan koneksi akun ${platform}?`;
+  if (linked) {
+    if (confirm(confirmMsg)) {
+      if (platform === 'Roblox') {
+        localStorage.removeItem('dyl_roblox_connected');
+        localStorage.removeItem('dyl_roblox_label');
+        updateRobloxUI(false, '');
+      } else {
         btn.classList.remove('linked');
         btn.textContent = currentLang === 'EN' ? 'Connect' : 'Hubungkan';
       }
-    } else {
-      btn.classList.add('linked');
-      btn.textContent = currentLang === 'EN' ? 'Connected' : 'Terhubung';
     }
+  } else if (platform !== 'Roblox') {
+    btn.classList.add('linked');
+    btn.textContent = currentLang === 'EN' ? 'Connected' : 'Terhubung';
   }
+}
  
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('fileInput');
@@ -2230,13 +2240,16 @@ body:before{
   }
  
   function saveApiKey() {
-    const id = document.getElementById('robloxIdInput').value.trim();
-    if (!id) {
-      alert(currentLang === 'EN' ? 'Please enter your Roblox User ID first.' : 'Masukkan Roblox User ID terlebih dahulu.');
-      return;
-    }
-    alert(currentLang === 'EN' ? 'Roblox settings saved (simulation — not yet connected to a real server).' : 'Pengaturan Roblox berhasil disimpan (simulasi — belum tersambung ke server asli).');
+  const id = document.getElementById('robloxIdInput').value.trim();
+  if (!id) {
+    alert(currentLang === 'EN' ? 'Please enter your Roblox User ID first.' : 'Masukkan Roblox User ID terlebih dahulu.');
+    return;
   }
+  localStorage.setItem('dyl_roblox_connected', '1');
+  localStorage.setItem('dyl_roblox_label', id);
+  updateRobloxUI(true, id);
+  alert(currentLang === 'EN' ? 'Roblox account connected.' : 'Akun Roblox berhasil terhubung.');
+}
  
   function copyAsset(el) {
     const original = el.innerHTML;
@@ -2260,15 +2273,7 @@ body:before{
   }
  
   // key: 'YYYY-MM', count: total konversi bulan itu
-  const monthlyData = (() => {
-    const key = currentMonthKey();
-    const [y, m] = key.split('-').map(Number);
-    const mk = (offset, count) => {
-      const dt = new Date(y, m - 1 - offset, 1);
-      return { key: `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`, count };
-    };
-    return [mk(0, 12), mk(1, 34), mk(2, 21), mk(3, 18), mk(4, 27)];
-  })();
+  const monthlyData = [{ key: currentMonthKey(), count: 0 }];
  
   function monthLabel(key) {
     const [y, m] = key.split('-').map(Number);
@@ -2346,7 +2351,7 @@ body:before{
     refreshHistoryVisibility();
   }
  
-  function addHistoryEntry(sourceLabel, title, linkText) {
+  function addHistoryEntry(sourceLabel, title, linkText, save = true) {
     const list = document.getElementById('historyList');
     const card = document.createElement('div');
     card.className = 'history-card new-entry';
@@ -2387,10 +2392,16 @@ body:before{
       <div class="h-expire-note" data-i18n="h-expire-note">File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.</div>
     `;
     list.prepend(card);
-    applyLanguage(currentLang);
-    refreshHistoryVisibility();
-    setTimeout(() => card.classList.remove('new-entry'), 600);
+  applyLanguage(currentLang);
+  refreshHistoryVisibility();
+  setTimeout(() => card.classList.remove('new-entry'), 600);
+
+  if (save) {
+    const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+    saved.unshift({ source: sourceLabel, title, link: linkText });
+    localStorage.setItem('dyl_history', JSON.stringify(saved));
   }
+}
  
   let quota = 2;
   function startConvert() {
@@ -2438,6 +2449,7 @@ body:before{
         const title = hasFile ? fileName.textContent.replace('🎵 ', '') : (document.getElementById('lpTitle') ? document.getElementById('lpTitle').textContent : 'Audio dari link');
         const linkText = hasFile ? fileName.textContent.replace('🎵 ', '') : url;
         addHistoryEntry(sourceLabel, title, linkText);
+        persistState();
       }
     }, 90);
   }
@@ -2494,6 +2506,59 @@ body:before{
       }
     }
   }
+  // ===== Sinkronisasi state asli (Roblox connect, history, total) =====
+function updateRobloxUI(connected, label) {
+  const name = document.getElementById('robloxAcctName');
+  const badge = document.getElementById('robloxAcctBadge');
+  const toggle = document.getElementById('robloxConnectToggle');
+  const detail = document.getElementById('robloxConnectDetail');
+  if (connected) {
+    name.textContent = label;
+    badge.textContent = currentLang === 'EN' ? 'Connected' : 'Terhubung';
+    badge.style.background = 'rgba(79,209,197,0.14)';
+    badge.style.color = 'var(--teal)';
+    toggle.textContent = currentLang === 'EN' ? 'Connected' : 'Terhubung';
+    toggle.classList.add('linked');
+    detail.innerHTML = `${currentLang === 'EN' ? 'Creator account' : 'Akun kreator'} <b>${label}</b>`;
+  } else {
+    name.textContent = currentLang === 'EN' ? 'Not connected' : 'Belum terhubung';
+    badge.textContent = currentLang === 'EN' ? 'Not connected' : 'Belum terhubung';
+    badge.style.background = 'rgba(255,255,255,.08)';
+    badge.style.color = 'var(--text-faint)';
+    toggle.textContent = currentLang === 'EN' ? 'Connect' : 'Hubungkan';
+    toggle.classList.remove('linked');
+    detail.textContent = currentLang === 'EN' ? 'No Roblox account connected yet' : 'Belum ada akun Roblox yang terhubung';
+  }
+}
+
+function loadPersistedState() {
+  const robloxConnected = localStorage.getItem('dyl_roblox_connected') === '1';
+  const robloxLabel = localStorage.getItem('dyl_roblox_label') || '';
+  updateRobloxUI(robloxConnected, robloxLabel);
+
+  const savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+  savedHistory.forEach(h => addHistoryEntry(h.source, h.title, h.link, false));
+
+  const savedTotal = parseInt(localStorage.getItem('dyl_total_conv') || '0');
+  document.getElementById('totalConv').textContent = savedTotal;
+
+  const savedMonthly = JSON.parse(localStorage.getItem('dyl_monthly') || 'null');
+  if (savedMonthly) { monthlyData.length = 0; monthlyData.push(...savedMonthly); }
+
+  const savedQuota = localStorage.getItem('dyl_quota');
+  if (savedQuota !== null) {
+    quota = parseInt(savedQuota);
+    document.getElementById('quotaLeft').textContent = quota;
+  }
+}
+
+function persistState() {
+  localStorage.setItem('dyl_total_conv', document.getElementById('totalConv').textContent);
+  localStorage.setItem('dyl_monthly', JSON.stringify(monthlyData));
+  localStorage.setItem('dyl_quota', quota);
+}
 
   checkDiscordLogin();
 </script>
