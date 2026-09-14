@@ -1,4 +1,3 @@
-Dyl studio upgraded · HTML
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -652,6 +651,35 @@ Dyl studio upgraded · HTML
     padding: 9px 12px;
     border-radius: 8px;
   }
+
+  .h-meta .h-value{color:var(--accent);font-weight:700;}
+  .h-actions{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    margin-top:14px;padding-top:14px;border-top:1px solid var(--border);
+  }
+  .h-download-btn{
+    display:inline-flex;align-items:center;gap:7px;
+    background:rgba(94,201,120,0.12);border:1px solid rgba(94,201,120,0.3);
+    color:#5EC978;padding:9px 14px;border-radius:9px;font-size:12.5px;font-weight:700;
+    cursor:pointer;transition:filter .15s;white-space:nowrap;
+  }
+  .h-download-btn:hover{filter:brightness(1.1);}
+  .h-download-btn svg{width:14px;height:14px;}
+  .h-account-select{
+    flex:1;min-width:150px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.09);color:var(--text-muted);
+    padding:9px 12px;border-radius:9px;font-size:12.5px;
+  }
+  .h-upload-btn{
+    display:inline-flex;align-items:center;gap:7px;
+    background:linear-gradient(135deg,#ffc35d,#f2a52e);color:#171109;
+    border:none;padding:9px 14px;border-radius:9px;font-size:12.5px;font-weight:700;
+    cursor:pointer;transition:filter .15s;white-space:nowrap;
+  }
+  .h-upload-btn:hover{filter:brightness(1.06);}
+  .h-upload-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .h-upload-btn svg{width:14px;height:14px;}
+  .h-thumb img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
  
   @media (max-width: 880px) {
     .app { grid-template-columns: 1fr; }
@@ -1538,73 +1566,7 @@ body:before{
         <p data-i18n="home-history-sub">Musik dan audio yang baru saja kamu convert muncul di sini</p>
       </div>
  
-      <div id="historyList">
-      <div class="history-card">
-        <div class="h-delete" onclick="removeCard(this)">
-          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
-        </div>
-        <div class="h-top">
-          <div class="h-thumb" style="background: linear-gradient(135deg, #3A3448, #221E29); display:flex; align-items:center; justify-content:center; font-size:20px;">🎵</div>
-          <div style="flex:1; min-width:0;">
-            <div class="h-badges">
-              <span class="h-badge completed">Completed</span>
-              <span class="h-badge uploaded">Uploaded</span>
-              <span class="h-badge expired">Expired</span>
-              <span class="h-badge source">YouTube</span>
-            </div>
-            <div class="h-title">Lo-fi Beat buat Nemenin Ngoding Malam Ini</div>
-            <a class="h-link" href="#">https://youtu.be/contoh-link-audio-1</a>
-          </div>
-        </div>
-        <div class="h-meta">
-          <span><span data-i18n="lbl-speed">Speed:</span> <b>1.4x</b></span>
-          <span><span data-i18n="lbl-amplify">Amplify:</span> <b>-3dB</b></span>
-          <span><span data-i18n="lbl-maxdur">Maks Durasi:</span> <b>300s</b></span>
-        </div>
-        <div class="h-ingame"><span data-i18n="lbl-ingame">⏱️ Kecepatan normal (in-game):</span> <b>0.71</b></div>
-        <div class="h-asset">
-          <span class="h-badge completed" style="text-transform:none;" data-i18n="h-accepted">Diterima</span>
-          <span class="h-asset-id">rbxassetid://84213765102</span>
-          <span class="h-copy-btn" onclick="copyAsset(this)">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
-            <span data-i18n="h-copy-format">Salin Format</span>
-          </span>
-        </div>
-        <div class="h-expire-note" data-i18n="h-expire-note">File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.</div>
-      </div>
- 
-      <div class="history-card">
-        <div class="h-delete" onclick="removeCard(this)">
-          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
-        </div>
-        <div class="h-top">
-          <div class="h-thumb" style="background: linear-gradient(135deg, #2B3A48, #221E29); display:flex; align-items:center; justify-content:center; font-size:20px;">🎧</div>
-          <div style="flex:1; min-width:0;">
-            <div class="h-badges">
-              <span class="h-badge completed">Completed</span>
-              <span class="h-badge uploaded">Uploaded</span>
-              <span class="h-badge source">MP3 Upload</span>
-            </div>
-            <div class="h-title">Sound Effect Ambience Hutan untuk Map Roblox</div>
-            <a class="h-link" href="#">ambience-hutan-final-v2.mp3</a>
-          </div>
-        </div>
-        <div class="h-meta">
-          <span><span data-i18n="lbl-speed">Speed:</span> <b>1.0x</b></span>
-          <span><span data-i18n="lbl-amplify">Amplify:</span> <b>0dB</b></span>
-          <span><span data-i18n="lbl-maxdur">Maks Durasi:</span> <b>120s</b></span>
-        </div>
-        <div class="h-ingame"><span data-i18n="lbl-ingame">⏱️ Kecepatan normal (in-game):</span> <b>1.00</b></div>
-        <div class="h-asset">
-          <span class="h-badge completed" style="text-transform:none;" data-i18n="h-accepted">Diterima</span>
-          <span class="h-asset-id">rbxassetid://74982605142</span>
-          <span class="h-copy-btn" onclick="copyAsset(this)">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
-            <span data-i18n="h-copy-format">Salin Format</span>
-          </span>
-        </div>
-      </div>
-      </div>
+      <div id="historyList"></div>
  
       <button class="history-loadmore" id="loadMoreBtn" onclick="loadMoreHistory()" style="display:none;">Muat 10 riwayat berikutnya</button>
     </div>
@@ -1820,6 +1782,7 @@ body:before{
  
   // ===== Link preview (YouTube / SoundCloud) =====
   let urlDebounce;
+let lastPreviewThumb = null;
   function handleUrlInput(value) {
     clearTimeout(urlDebounce);
     const preview = document.getElementById('linkPreview');
@@ -1830,9 +1793,10 @@ body:before{
   }
  
   function clearUrlPreview() {
-    document.getElementById('urlInput').value = '';
-    document.getElementById('linkPreview').classList.remove('show');
-  }
+  document.getElementById('urlInput').value = '';
+  document.getElementById('linkPreview').classList.remove('show');
+  lastPreviewThumb = null;
+}
  
   function showPreviewLoading() {
     const preview = document.getElementById('linkPreview');
@@ -1845,7 +1809,8 @@ body:before{
   }
  
   function renderPreview(thumb, title, sub) {
-    const preview = document.getElementById('linkPreview');
+  lastPreviewThumb = thumb || null;
+  const preview = document.getElementById('linkPreview');
     preview.classList.remove('loading');
     document.getElementById('lpInfo').innerHTML = `
       <div class="lp-title" id="lpTitle">${title}</div>
@@ -1993,6 +1958,7 @@ body:before{
       'lbl-speed': 'Speed:',
       'lbl-amplify': 'Amplify:',
       'lbl-maxdur': 'Maks Durasi:',
+      'lbl-resultdur': 'Durasi Hasil:',
       'lbl-ingame': '⏱️ Kecepatan normal (in-game):',
       'h-accepted': 'Diterima',
       'h-copy-format': 'Salin Format',
@@ -2091,6 +2057,7 @@ body:before{
       'lbl-speed': 'Speed:',
       'lbl-amplify': 'Amplify:',
       'lbl-maxdur': 'Max Duration:',
+      'lbl-resultdur': 'Result Duration:',
       'lbl-ingame': '⏱️ Normal speed (in-game):',
       'h-accepted': 'Accepted',
       'h-copy-format': 'Copy Format',
@@ -2351,24 +2318,82 @@ body:before{
     refreshHistoryVisibility();
   }
  
-  function addHistoryEntry(sourceLabel, title, linkText, save = true) {
+  function formatDuration(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+ 
+  function populateAccountSelect(selectEl) {
+    const robloxConnected = localStorage.getItem('dyl_roblox_connected') === '1';
+    const robloxLabel = localStorage.getItem('dyl_roblox_label') || '';
+    let options = '';
+    if (robloxConnected) {
+      options += `<option value="personal:${robloxLabel}">${robloxLabel} (Personal)</option>`;
+    }
+    document.querySelectorAll('.linked-group-item').forEach(g => {
+      const name = g.querySelector('.lg-name')?.textContent || 'Group';
+      const gid = g.dataset.groupId || '';
+      options += `<option value="group:${gid}">${name} (Group)</option>`;
+    });
+    if (!options) {
+      selectEl.innerHTML = `<option value="">${currentLang === 'EN' ? 'No account connected' : 'Belum ada akun'}</option>`;
+    } else {
+      selectEl.innerHTML = `<option value="">${currentLang === 'EN' ? 'Select account' : 'Pilih akun'}</option>` + options;
+    }
+  }
+ 
+  function downloadHistoryAudio() {
+    alert(currentLang === 'EN'
+      ? 'This is a demo — no real audio file has been generated yet.'
+      : 'Ini masih demo — belum ada file audio asli yang dihasilkan.');
+  }
+ 
+  function uploadHistoryToRoblox(btn) {
+    const card = btn.closest('.history-card');
+    const select = card.querySelector('.h-account-select');
+    if (!select.value) {
+      alert(currentLang === 'EN' ? 'Please select an account first.' : 'Pilih akun terlebih dahulu.');
+      return;
+    }
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = currentLang === 'EN' ? 'Uploading...' : 'Mengupload...';
+ 
+    setTimeout(() => {
+      const assetId = 'rbxassetid://' + Math.floor(70000000000 + Math.random() * 20000000000);
+      card.querySelector('.h-badge.uploaded').style.display = 'inline-block';
+      const assetBlock = card.querySelector('.h-asset');
+      assetBlock.style.display = 'flex';
+      assetBlock.querySelector('.h-asset-id').textContent = assetId;
+      btn.textContent = currentLang === 'EN' ? '✓ Uploaded' : '✓ Terupload';
+    }, 1200);
+  }
+ 
+  function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null) {
     const list = document.getElementById('historyList');
     const card = document.createElement('div');
     card.className = 'history-card new-entry';
     const speed = document.getElementById('speedVal').textContent;
     const amp = document.getElementById('ampVal').textContent;
     const dur = document.getElementById('durVal').textContent;
-    const assetId = 'rbxassetid://' + Math.floor(70000000000 + Math.random() * 20000000000);
+    const maxDurNum = parseInt(dur) || 60;
+    const resultDurLabel = existingDurLabel || formatDuration(Math.max(15, Math.floor(Math.random() * maxDurNum)));
+ 
+    const thumbInner = thumb
+      ? `<img src="${thumb}" alt="">`
+      : (sourceLabel === 'MP3 Upload' ? '🎧' : '🎵');
+ 
     card.innerHTML = `
       <div class="h-delete" onclick="removeCard(this)">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
       </div>
       <div class="h-top">
-        <div class="h-thumb" style="background: linear-gradient(135deg, #3A3448, #221E29); display:flex; align-items:center; justify-content:center; font-size:20px;">🎵</div>
+        <div class="h-thumb" style="background: linear-gradient(135deg, #3A3448, #221E29); display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden;">${thumbInner}</div>
         <div style="flex:1; min-width:0;">
           <div class="h-badges">
             <span class="h-badge completed">Completed</span>
-            <span class="h-badge uploaded">Uploaded</span>
+            <span class="h-badge uploaded" style="display:none;">Uploaded</span>
             <span class="h-badge source">${sourceLabel}</span>
           </div>
           <div class="h-title">${title}</div>
@@ -2376,32 +2401,45 @@ body:before{
         </div>
       </div>
       <div class="h-meta">
-        <span><span data-i18n="lbl-speed">Speed:</span> <b>${speed}</b></span>
-        <span><span data-i18n="lbl-amplify">Amplify:</span> <b>${amp}</b></span>
-        <span><span data-i18n="lbl-maxdur">Maks Durasi:</span> <b>${dur}</b></span>
+        <span><span data-i18n="lbl-speed">Speed:</span> <b class="h-value">${speed}</b></span>
+        <span><span data-i18n="lbl-amplify">Amplify:</span> <b class="h-value">${amp}</b></span>
+        <span><span data-i18n="lbl-maxdur">Maks Durasi:</span> <b class="h-value">${dur}</b></span>
+        <span><span data-i18n="lbl-resultdur">Durasi Hasil:</span> <b class="h-value">${resultDurLabel}</b></span>
       </div>
       <div class="h-ingame"><span data-i18n="lbl-ingame">⏱️ Kecepatan normal (in-game):</span> <b>${(1 / parseFloat(speed)).toFixed(2)}</b></div>
-      <div class="h-asset">
+      <div class="h-asset" style="display:none;">
         <span class="h-badge completed" style="text-transform:none;" data-i18n="h-accepted">Diterima</span>
-        <span class="h-asset-id">${assetId}</span>
+        <span class="h-asset-id"></span>
         <span class="h-copy-btn" onclick="copyAsset(this)">
           <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
           <span data-i18n="h-copy-format">Salin Format</span>
         </span>
       </div>
+      <div class="h-actions">
+        <button class="h-download-btn" onclick="downloadHistoryAudio()">
+          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"/></svg>
+          Download OGG
+        </button>
+        <select class="h-account-select"></select>
+        <button class="h-upload-btn" onclick="uploadHistoryToRoblox(this)">
+          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M20 4v5h-5M4 20v-5h5"/></svg>
+          Upload to Roblox
+        </button>
+      </div>
       <div class="h-expire-note" data-i18n="h-expire-note">File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.</div>
     `;
     list.prepend(card);
-  applyLanguage(currentLang);
-  refreshHistoryVisibility();
-  setTimeout(() => card.classList.remove('new-entry'), 600);
-
-  if (save) {
-    const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-    saved.unshift({ source: sourceLabel, title, link: linkText });
-    localStorage.setItem('dyl_history', JSON.stringify(saved));
+    populateAccountSelect(card.querySelector('.h-account-select'));
+    applyLanguage(currentLang);
+    refreshHistoryVisibility();
+    setTimeout(() => card.classList.remove('new-entry'), 600);
+ 
+    if (save) {
+      const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel });
+      localStorage.setItem('dyl_history', JSON.stringify(saved));
+    }
   }
-}
  
   let quota = 2;
   function startConvert() {
@@ -2446,9 +2484,10 @@ body:before{
         bumpCurrentMonthCount();
  
         const sourceLabel = hasFile ? 'MP3 Upload' : (url.includes('soundcloud') ? 'SoundCloud' : 'YouTube');
-        const title = hasFile ? fileName.textContent.replace('🎵 ', '') : (document.getElementById('lpTitle') ? document.getElementById('lpTitle').textContent : 'Audio dari link');
-        const linkText = hasFile ? fileName.textContent.replace('🎵 ', '') : url;
-        addHistoryEntry(sourceLabel, title, linkText);
+const title = hasFile ? fileName.textContent.replace('🎵 ', '') : (document.getElementById('lpTitle') ? document.getElementById('lpTitle').textContent : 'Audio dari link');
+const linkText = hasFile ? fileName.textContent.replace('🎵 ', '') : url;
+const thumb = hasFile ? null : lastPreviewThumb;
+addHistoryEntry(sourceLabel, title, linkText, true, thumb);
         persistState();
       }
     }, 90);
@@ -2542,10 +2581,16 @@ function loadPersistedState() {
   const robloxLabel = localStorage.getItem('dyl_roblox_label') || '';
   updateRobloxUI(robloxConnected, robloxLabel);
 
-  const savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+  let savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+  if (!savedHistory.length && localStorage.getItem('dyl_history') === null) {
+    savedHistory = [
+      { source: 'MP3 Upload', title: 'Sound Effect Ambience Hutan untuk Map Roblox', link: 'ambience-hutan-final-v2.mp3', thumb: null, resultDurLabel: '1:00' },
+      { source: 'YouTube', title: 'Lo-fi Beat buat Nemenin Ngoding Malam Ini', link: 'https://youtu.be/contoh-link-audio-1', thumb: null, resultDurLabel: '3:34' }
+    ];
+  }
   const list = document.getElementById('historyList');
   list.innerHTML = '';
-  savedHistory.forEach(h => addHistoryEntry(h.source, h.title, h.link, false));
+  savedHistory.forEach(h => addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel));
 
   const savedTotal = parseInt(localStorage.getItem('dyl_total_conv') || '0');
   document.getElementById('totalConv').textContent = savedTotal;
