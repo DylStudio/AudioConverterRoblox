@@ -1652,20 +1652,13 @@ body:before{
           <label class="switch"><input type="checkbox" checked><span class="switch-slider"></span></label>
         </div>
  
-        <div class="settings-row">
+           <div class="settings-row">
           <div>
             <div class="settings-row-title" data-i18n="settings-autodelete-title">Hapus Riwayat Otomatis</div>
-            <div class="settings-row-sub" data-i18n="settings-autodelete-sub">Hapus file hasil convert setelah 1 jam</div>
+            <div class="settings-row-sub" data-i18n="settings-autodelete-sub">Hapus kartu riwayat setelah 1 hari</div>
           </div>
-          <label class="switch"><input type="checkbox" checked><span class="switch-slider"></span></label>
+          <label class="switch"><input type="checkbox" id="autoDeleteHistoryToggle" checked onchange="saveAutoDeleteHistoryPref(this.checked)"><span class="switch-slider"></span></label>
         </div>
- 
-        <div class="settings-row" style="border-bottom:none;">
-          <div>
-            <div class="settings-row-title" data-i18n="settings-datasaver-title">Mode Hemat Data</div>
-            <div class="settings-row-sub" data-i18n="settings-datasaver-sub">Kompres pratinjau audio lebih kecil</div>
-          </div>
-          <label class="switch"><input type="checkbox"><span class="switch-slider"></span></label>
         </div>
       </div>
     </div>
@@ -1989,7 +1982,7 @@ let lastPreviewThumb = null;
       'settings-email-title': 'Notifikasi Email',
       'settings-email-sub': 'Dapat email saat konversi selesai',
       'settings-autodelete-title': 'Hapus Riwayat Otomatis',
-      'settings-autodelete-sub': 'Hapus file hasil convert setelah 1 jam',
+      'settings-autodelete-sub': 'Hapus kartu riwayat setelah 1 hari',
       'settings-datasaver-title': 'Mode Hemat Data',
       'settings-datasaver-sub': 'Kompres pratinjau audio lebih kecil',
       'lbl-speed': 'Speed:',
@@ -2088,7 +2081,7 @@ let lastPreviewThumb = null;
       'settings-email-title': 'Email Notifications',
       'settings-email-sub': 'Get an email when a conversion is finished',
       'settings-autodelete-title': 'Auto-delete History',
-      'settings-autodelete-sub': 'Delete converted files after 1 hour',
+      'settings-autodelete-sub': 'Delete history cards after 1 day',
       'settings-datasaver-title': 'Data Saver Mode',
       'settings-datasaver-sub': 'Compress the audio preview to save data',
       'lbl-speed': 'Speed:',
@@ -2715,7 +2708,7 @@ function loadPersistedState() {
     let savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
   const list = document.getElementById('historyList');
   list.innerHTML = '';
-  savedHistory.forEach(h => addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur, h.createdAt));
+  savedHistory.slice().reverse().forEach(h => addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur, h.createdAt));
 
   const savedTotal = parseInt(localStorage.getItem('dyl_total_conv') || '0');
   document.getElementById('totalConv').textContent = savedTotal;
@@ -2732,6 +2725,10 @@ function loadPersistedState() {
   updateTotalConvSub();
   checkExpiredHistory();
   loadAdvSettings();
+  purgeOldHistoryCards();
+
+  const autoDeleteToggle = document.getElementById('autoDeleteHistoryToggle');
+  if (autoDeleteToggle) autoDeleteToggle.checked = isAutoDeleteHistoryEnabled();
 }
 
   function persistState() {
@@ -2816,6 +2813,39 @@ setInterval(checkExpiredHistory, 30000);
       console.error('Gagal load pengaturan lanjutan:', err);
     }
   }
+    const HISTORY_AUTO_DELETE_MS = 24 * 60 * 60 * 1000; // 1 hari
+
+  function saveAutoDeleteHistoryPref(enabled) {
+    localStorage.setItem('dyl_autodelete_history', enabled ? '1' : '0');
+  }
+
+  function isAutoDeleteHistoryEnabled() {
+    const val = localStorage.getItem('dyl_autodelete_history');
+    return val === null ? true : val === '1'; // default ON kalau belum pernah diset
+  }
+
+  function purgeOldHistoryCards() {
+    if (!isAutoDeleteHistoryEnabled()) return;
+
+    const now = Date.now();
+    let saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+    const before = saved.length;
+    saved = saved.filter(h => (now - (h.createdAt || 0)) <= HISTORY_AUTO_DELETE_MS);
+    if (saved.length !== before) {
+      localStorage.setItem('dyl_history', JSON.stringify(saved));
+    }
+
+    document.querySelectorAll('#historyList .history-card').forEach(card => {
+      const created = parseInt(card.dataset.created || '0');
+      if (created && (now - created) > HISTORY_AUTO_DELETE_MS) {
+        card.remove();
+      }
+    });
+
+    refreshHistoryVisibility();
+  }
+
+  setInterval(purgeOldHistoryCards, 60 * 60 * 1000); // cek tiap 1 jam
 </script>
  
 </body>
