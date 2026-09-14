@@ -2450,8 +2450,8 @@ let lastPreviewThumb = null;
             <span class="h-badge uploaded" style="display:none;">Uploaded</span>
             <span class="h-badge source">${sourceLabel}</span>
           </div>
-          <div class="h-title">${title}</div>
-          <a class="h-link" href="#">${linkText}</a>
+           <div class="h-title">${title}</div>
+          <a class="h-link" href="${sourceLabel === 'MP3 Upload' ? '#' : linkText}" target="_blank" rel="noopener noreferrer">${linkText}</a>
         </div>
       </div>
       <div class="h-meta">
@@ -2573,10 +2573,30 @@ let lastPreviewThumb = null;
       const linkText = hasFile ? fileName.textContent.replace('🎵 ', '') : url;
       const thumb = hasFile ? null : lastPreviewThumb;
       const fullDownloadUrl = CONVERT_API_BASE + data.downloadUrl;
-     addHistoryEntry(sourceLabel, title, linkText, true, thumb, null, fullDownloadUrl,
-      document.getElementById('speedVal').textContent,
-      document.getElementById('ampVal').textContent,
-      document.getElementById('durVal').textContent);
+      addHistoryEntry(sourceLabel, title, linkText, true, thumb, null, fullDownloadUrl,
+        document.getElementById('speedVal').textContent,
+        document.getElementById('ampVal').textContent,
+        document.getElementById('durVal').textContent);
+
+      // Kosongkan input link & file setelah convert
+      document.getElementById('urlInput').value = '';
+      clearUrlPreview();
+      fileInput.value = '';
+      fileChosen.classList.remove('show');
+
+      // Reset pengaturan lanjutan ke default
+      document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+      document.querySelector('.preset-chip.default').classList.add('active');
+      const speedSlider = document.getElementById('speedSlider');
+      speedSlider.value = 2.3;
+      updateAdv(speedSlider, 'speed');
+      const ampSlider = document.getElementById('ampSlider');
+      ampSlider.value = 0;
+      updateAdv(ampSlider, 'amp');
+      const durSlider = document.querySelector('.slider-row input[type="range"][min="30"]');
+      durSlider.value = 300;
+      updateAdv(durSlider, 'dur');
+
       persistState();
     } catch (err) {
       clearInterval(labelInterval);
@@ -2711,10 +2731,10 @@ function loadPersistedState() {
   const savedMonthly = JSON.parse(localStorage.getItem('dyl_monthly') || 'null');
   if (savedMonthly) { monthlyData.length = 0; monthlyData.push(...savedMonthly); }
 
-  const savedQuota = localStorage.getItem('dyl_quota');
+   const savedQuota = localStorage.getItem('dyl_quota');
   if (savedQuota !== null) {
-    quota = parseInt(savedQuota);
-    document.getElementById('quotaLeft').textContent = quota;
+    quota = savedQuota === 'unlimited' ? Infinity : parseInt(savedQuota);
+    document.getElementById('quotaLeft').textContent = quota === Infinity ? '∞' : quota;
   }
   renderMonthlyHistory();
   updateTotalConvSub();
