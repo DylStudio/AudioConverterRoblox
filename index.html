@@ -1788,15 +1788,16 @@ body:before{
 
       // Update kartu Paket Aktif
       document.querySelector('.plan-card .stat-big').textContent = name;
-      const planSub = document.querySelector('.plan-card .stat-sub');
-      planSub.textContent = currentLang === 'EN' ? `Active until ${expireLabel}` : `Aktif sampai ${expireLabel}`;
+      const startLabel = new Date().toLocaleDateString(currentLang === 'EN' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+const endLabelShort = expireDate.toLocaleDateString(currentLang === 'EN' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+const planSub = document.querySelector('.plan-card .stat-sub');
+planSub.textContent = `${startLabel} — ${endLabelShort}`;
 
       // Set kuota jadi unlimited
       quota = Infinity;
-      document.getElementById('quotaLeft').innerHTML = '∞';
-      document.querySelector('.quota-pill span').innerHTML = currentLang === 'EN'
-        ? `<b>∞</b> Unlimited conversions · ${name} plan active`
-        : `<b>∞</b> Konversi tanpa batas · Paket ${name} aktif`;
+document.querySelector('.quota-pill').innerHTML = currentLang === 'EN'
+  ? `🎚️ <span><b id="quotaLeft">∞</b> Unlimited conversions · ${name} plan active</span>`
+  : `🎚️ <span><b id="quotaLeft">∞</b> Konversi tanpa batas · Paket ${name} aktif</span>`;
 
       persistState();
       closeUpgradeModal();
@@ -2674,13 +2675,17 @@ function loadPersistedState() {
     quota = parseInt(savedQuota);
     document.getElementById('quotaLeft').textContent = quota;
   }
+  renderMonthlyHistory();
+  updateTotalConvSub();
 }
 
-function persistState() {
-  localStorage.setItem('dyl_total_conv', document.getElementById('totalConv').textContent);
-  localStorage.setItem('dyl_monthly', JSON.stringify(monthlyData));
-  localStorage.setItem('dyl_quota', quota);
+const savedQuota = localStorage.getItem('dyl_quota');
+if (savedQuota !== null) {
+    quota = savedQuota === 'unlimited' ? Infinity : parseInt(savedQuota);
+    document.getElementById('quotaLeft').textContent = quota === Infinity ? '∞' : quota;
 }
+renderMonthlyHistory();
+updateTotalConvSub();
 
   checkDiscordLogin();
 </script>
