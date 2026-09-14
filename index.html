@@ -1723,6 +1723,7 @@ body:before{
  
 <script>
   let currentLang = 'ID';
+  const CONVERT_API_BASE = 'https://api.dylstudioapi.my.id';
  
   // Waveform bars
   const wf = document.getElementById('waveform');
@@ -2343,10 +2344,13 @@ let lastPreviewThumb = null;
     }
   }
  
-  function downloadHistoryAudio() {
-    alert(currentLang === 'EN'
-      ? 'This is a demo — no real audio file has been generated yet.'
-      : 'Ini masih demo — belum ada file audio asli yang dihasilkan.');
+    function downloadHistoryAudio(btn) {
+    const url = btn.dataset.downloadUrl;
+    if (!url) {
+      alert(currentLang === 'EN' ? 'No audio file available for this entry.' : 'Belum ada file audio untuk entri ini.');
+      return;
+    }
+    window.open(url, '_blank');
   }
  
   function uploadHistoryToRoblox(btn) {
@@ -2370,7 +2374,7 @@ let lastPreviewThumb = null;
     }, 1200);
   }
  
-  function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null) {
+  function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null) {
     const list = document.getElementById('historyList');
     const card = document.createElement('div');
     card.className = 'history-card new-entry';
@@ -2416,7 +2420,7 @@ let lastPreviewThumb = null;
         </span>
       </div>
       <div class="h-actions">
-        <button class="h-download-btn" onclick="downloadHistoryAudio()">
+        <button class="h-download-btn" onclick="downloadHistoryAudio(this)" data-download-url="${downloadUrl || ''}">
           <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"/></svg>
           Download OGG
         </button>
@@ -2434,15 +2438,15 @@ let lastPreviewThumb = null;
     refreshHistoryVisibility();
     setTimeout(() => card.classList.remove('new-entry'), 600);
  
-    if (save) {
+        if (save) {
       const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel });
+      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel, downloadUrl });
       localStorage.setItem('dyl_history', JSON.stringify(saved));
     }
   }
  
   let quota = 2;
-  function startConvert() {
+  async function startConvert() {
     const url = document.getElementById('urlInput').value.trim();
     const hasFile = fileChosen.classList.contains('show');
     if (!url && !hasFile) {
@@ -2453,44 +2457,81 @@ let lastPreviewThumb = null;
       alert(currentLang === 'EN' ? 'Your free conversion quota is used up. Upgrade your plan to continue.' : 'Kuota konversi gratis habis. Upgrade paket untuk melanjutkan.');
       return;
     }
- 
+
     const btn = document.getElementById('convertBtn');
     const progressWrap = document.getElementById('progressWrap');
     const progressFill = document.getElementById('progressFill');
     const progressLabel = document.getElementById('progressLabel');
     const resultCard = document.getElementById('resultCard');
- 
+
     resultCard.classList.remove('show');
     btn.disabled = true;
     progressWrap.classList.add('show');
-    progressFill.style.width = '0%';
- 
-    let pct = 0;
+    progressFill.style.width = '10%';
+
     const labels = currentLang === 'EN'
       ? ['Downloading audio...', 'Analyzing format...', 'Converting to OGG...', 'Preparing result...']
       : ['Mengunduh audio...', 'Menganalisis format...', 'Mengonversi ke OGG...', 'Menyiapkan hasil...'];
-    const interval = setInterval(() => {
-      pct += 4;
-      progressFill.style.width = pct + '%';
-      progressLabel.textContent = labels[Math.min(Math.floor(pct / 26), labels.length - 1)];
-      if (pct >= 100) {
-        clearInterval(interval);
-        btn.disabled = false;
-        progressWrap.classList.remove('show');
-        resultCard.classList.add('show');
-        quota -= 1;
-        document.getElementById('quotaLeft').textContent = quota;
-        document.getElementById('totalConv').textContent = parseInt(document.getElementById('totalConv').textContent) + 1;
-        bumpCurrentMonthCount();
- 
-        const sourceLabel = hasFile ? 'MP3 Upload' : (url.includes('soundcloud') ? 'SoundCloud' : 'YouTube');
-const title = hasFile ? fileName.textContent.replace('🎵 ', '') : (document.getElementById('lpTitle') ? document.getElementById('lpTitle').textContent : 'Audio dari link');
-const linkText = hasFile ? fileName.textContent.replace('🎵 ', '') : url;
-const thumb = hasFile ? null : lastPreviewThumb;
-addHistoryEntry(sourceLabel, title, linkText, true, thumb);
-        persistState();
+    let labelIdx = 0;
+    progressLabel.textContent = labels[0];
+    const labelInterval = setInterval(() => {
+      labelIdx = Math.min(labelIdx + 1, labels.length - 1);
+      progressLabel.textContent = labels[labelIdx];
+      progressFill.style.width = Math.min(85, 10 + labelIdx * 25) + '%';
+    }, 3000);
+
+    const speed = document.getElementById('speedSlider').value;
+    const amplifyDb = document.getElementById('ampSlider').value;
+    const durInput = document.querySelector('.slider-row input[type="range"][min="30"]');
+    const maxDuration = durInput ? durInput.value : 300;
+
+    try {
+      let res;
+      if (hasFile) {
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('speed', speed);
+        formData.append('amplifyDb', amplifyDb);
+        formData.append('maxDuration', maxDuration);
+        res = await fetch(`${CONVERT_API_BASE}/convert`, { method: 'POST', body: formData });
+      } else {
+        res = await fetch(`${CONVERT_API_BASE}/convert`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, speed, amplifyDb, maxDuration })
+        });
       }
-    }, 90);
+
+      const data = await res.json();
+      clearInterval(labelInterval);
+
+      if (!res.ok || !data.success) throw new Error(data.error || 'Convert gagal');
+
+      progressFill.style.width = '100%';
+      await new Promise(r => setTimeout(r, 300));
+
+      btn.disabled = false;
+      progressWrap.classList.remove('show');
+      resultCard.classList.add('show');
+      quota -= 1;
+      document.getElementById('quotaLeft').textContent = quota;
+      document.getElementById('totalConv').textContent = parseInt(document.getElementById('totalConv').textContent) + 1;
+      bumpCurrentMonthCount();
+
+      const sourceLabel = hasFile ? 'MP3 Upload' : (url.includes('soundcloud') ? 'SoundCloud' : 'YouTube');
+      const title = hasFile ? fileName.textContent.replace('🎵 ', '') : (document.getElementById('lpTitle') ? document.getElementById('lpTitle').textContent : 'Audio dari link');
+      const linkText = hasFile ? fileName.textContent.replace('🎵 ', '') : url;
+      const thumb = hasFile ? null : lastPreviewThumb;
+      const fullDownloadUrl = CONVERT_API_BASE + data.downloadUrl;
+      addHistoryEntry(sourceLabel, title, linkText, true, thumb, null, fullDownloadUrl);
+      persistState();
+    } catch (err) {
+      clearInterval(labelInterval);
+      console.error(err);
+      btn.disabled = false;
+      progressWrap.classList.remove('show');
+      alert(currentLang === 'EN' ? 'Conversion failed: ' + err.message : 'Convert gagal: ' + err.message);
+    }
   }
  
     refreshHistoryVisibility();
@@ -2581,16 +2622,10 @@ function loadPersistedState() {
   const robloxLabel = localStorage.getItem('dyl_roblox_label') || '';
   updateRobloxUI(robloxConnected, robloxLabel);
 
-  let savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-  if (!savedHistory.length && localStorage.getItem('dyl_history') === null) {
-    savedHistory = [
-      { source: 'MP3 Upload', title: 'Sound Effect Ambience Hutan untuk Map Roblox', link: 'ambience-hutan-final-v2.mp3', thumb: null, resultDurLabel: '1:00' },
-      { source: 'YouTube', title: 'Lo-fi Beat buat Nemenin Ngoding Malam Ini', link: 'https://youtu.be/contoh-link-audio-1', thumb: null, resultDurLabel: '3:34' }
-    ];
-  }
+    let savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
   const list = document.getElementById('historyList');
   list.innerHTML = '';
-  savedHistory.forEach(h => addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel));
+  savedHistory.forEach(h => addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl));
 
   const savedTotal = parseInt(localStorage.getItem('dyl_total_conv') || '0');
   document.getElementById('totalConv').textContent = savedTotal;
