@@ -682,11 +682,16 @@
   .h-download-btn:hover{filter:brightness(1.1);}
   .h-download-btn svg{width:14px;height:14px;}
   .h-account-select{
-    flex:1 1 160px;max-width:220px;min-width:140px;
-    background:rgba(255,255,255,.03);
-    border:1px solid rgba(255,255,255,.09);color:var(--text-muted);
-    padding:9px 12px;border-radius:9px;font-size:12.5px;
-  }
+  flex:1 1 160px;max-width:220px;min-width:140px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.09);color:var(--text-muted);
+  padding:9px 12px;border-radius:9px;font-size:12.5px;
+  color-scheme: dark;
+}
+.h-account-select option {
+  background: #1C1922;
+  color: var(--text-primary);
+}
   .h-upload-btn{
     display:inline-flex;align-items:center;gap:7px;
     background:linear-gradient(135deg,#ffc35d,#f2a52e);color:#171109;
@@ -1998,7 +2003,7 @@ let lastPreviewThumb = null;
       'lbl-ingame': '⏱️ Kecepatan normal (in-game):',
       'h-accepted': 'Diterima',
       'h-copy-format': 'Salin Format Script',
-      'h-copy-assetid': 'Salin Asset ID',
+      'h-already-uploaded': 'Sudah diupload',
       'h-expire-note': 'File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.'
     },
     EN: {
@@ -2098,7 +2103,7 @@ let lastPreviewThumb = null;
       'lbl-ingame': '⏱️ Normal speed (in-game):',
       'h-accepted': 'Accepted',
       'h-copy-format': 'Copy Script Format',
-      'h-copy-assetid': 'Copy Asset ID',
+      'h-already-uploaded': 'Already uploaded',
       'h-expire-note': 'File is automatically deleted after 1 hour. Re-convert if you still need it.'
     }
   };
@@ -2628,7 +2633,9 @@ function updateHistoryStorage(downloadUrl, patch) {
       assetBlock.style.display = 'block';
       assetBlock.querySelector('.h-asset-id').textContent = 'rbxassetid://' + data.assetId;
       updateModerationBadge(assetBlock.querySelector('.h-badge'), 'Reviewing');
-      btn.textContent = currentLang === 'EN' ? '✓ Uploaded' : '✓ Terupload';
+
+      card.querySelector('.h-upload-row').style.display = 'none';
+      card.querySelector('.h-uploaded-label').style.display = 'inline-flex';
 
       updateHistoryStorage(downloadUrl, { uploaded: true, assetId: data.assetId, moderationState: 'Reviewing' });
       startModerationPolling(card, data.assetId);
@@ -2695,16 +2702,22 @@ function updateHistoryStorage(downloadUrl, patch) {
           </span>
         </div>
       </div>
-      <div class="h-actions">
+     <div class="h-actions">
         <button class="h-download-btn" onclick="downloadHistoryAudio(this)" data-download-url="${downloadUrl || ''}">
           <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"/></svg>
           Download OGG
         </button>
-        <select class="h-account-select"></select>
-        <button class="h-upload-btn" onclick="uploadHistoryToRoblox(this)" ${savedUploaded ? 'disabled' : ''}>
-          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M20 4v5h-5M4 20v-5h5"/></svg>
-          ${savedUploaded ? (currentLang === 'EN' ? '✓ Uploaded' : '✓ Terupload') : 'Upload to Roblox'}
-        </button>
+        <div class="h-upload-row" style="display:${savedUploaded ? 'none' : 'flex'}; gap:10px; flex-wrap:wrap; align-items:center;">
+          <select class="h-account-select"></select>
+          <button class="h-upload-btn" onclick="uploadHistoryToRoblox(this)">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M20 4v5h-5M4 20v-5h5"/></svg>
+            Upload to Roblox
+          </button>
+        </div>
+        <span class="h-uploaded-label" style="display:${savedUploaded ? 'inline-flex' : 'none'}; align-items:center; gap:6px; color:#5EC978; font-size:12.5px; font-weight:700;">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M20 6L9 17l-5-5"/></svg>
+          <span data-i18n="h-already-uploaded">Sudah diupload</span>
+        </span>
       </div>
       <div class="h-expire-note" data-i18n="h-expire-note">File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.</div>
     `;
