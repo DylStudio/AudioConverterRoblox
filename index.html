@@ -2450,25 +2450,99 @@ let lastPreviewThumb = null;
   window.open(finalUrl, '_blank');
 }
  
-  function uploadHistoryToRoblox(btn) {
+  // Potong judul otomatis: buang bagian setelah tanda kurung/bracket pertama
+  // "DJ COBA - COBA (BOOTLEG) X ... !!" -> "DJ COBA - COBA"
+  function cleanRobloxTitle(rawTitle) {
+    if (!rawTitle) return 'Audio DYL STUDIO';
+    let t = rawTitle.split(/[\(\[]/)[0].trim();
+    // buang sisa tanda pemisah di ujung seperti "-", "|", "–" dsb
+    t = t.replace(/[-|–—:\s]+$/, '').trim();
+    if (!t) t = rawTitle.trim();
+    return t.slice(0, 50);
+  }
+
+  function updateModerationBadge(el, state) {
+    if (!el) return;
+    el.removeAttribute('data-i18n');
+    const map = {
+      Reviewing: { id: 'Menunggu Moderasi', en: 'Under Review', cls: 'source' },
+      Approved: { id: 'Diterima', en: 'Approved', cls: 'completed' },
+      Rejected: { id: 'Ditolak', en: 'Rejected', cls: 'expired' }
+    };
+    const info = map[state] || map.Reviewing;
+    el.textContent = currentLang === 'EN' ? info.en : info.id;
+    el.classList.remove('completed', 'expired', 'source');
+    el.classList.add(info.cls);
+  }
+
+  function startModerationPolling(card, assetId) {
+    const statusBadge = card.querySelector('.h-asset .h-badge');
+    let attempts = 0;
+    const maxAttempts = 40; // ~10 menit, cek tiap 15 detik
+    const interval = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch(`${CONVERT_API_BASE}/roblox/moderation/${assetId}`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          updateModerationBadge(statusBadge, data.moderationState);
+          if (data.moderationState && data.moderationState !== 'Reviewing') {
+            clearInterval(interval);
+          }
+        }
+      } catch (err) {
+        console.error('Gagal cek status moderasi:', err);
+      }
+      if (attempts >= maxAttempts) clearInterval(interval);
+    }, 15000);
+  }
+
+  async function uploadHistoryToRoblox(btn) {
     const card = btn.closest('.history-card');
     const select = card.querySelector('.h-account-select');
     if (!select.value) {
       alert(currentLang === 'EN' ? 'Please select an account first.' : 'Pilih akun terlebih dahulu.');
       return;
     }
+
+    const downloadUrl = card.querySelector('.h-download-btn')?.dataset.downloadUrl || '';
+    const match = downloadUrl.match(/\/files\/([a-f0-9]{16})\.ogg/);
+    if (!match) {
+      alert(currentLang === 'EN' ? 'Audio file not found for this entry. Please re-convert.' : 'File audio tidak ditemukan untuk entri ini. Silakan convert ulang.');
+      return;
+    }
+    const fileId = match[1];
+    const rawTitle = card.querySelector('.h-title')?.textContent?.trim() || 'Audio DYL STUDIO';
+    const title = cleanRobloxTitle(rawTitle);
+
     btn.disabled = true;
     const originalText = btn.textContent;
     btn.textContent = currentLang === 'EN' ? 'Uploading...' : 'Mengupload...';
- 
-    setTimeout(() => {
-      const assetId = 'rbxassetid://' + Math.floor(70000000000 + Math.random() * 20000000000);
+
+    try {
+      const res = await fetch(`${CONVERT_API_BASE}/roblox/upload`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId, title, account: select.value })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Upload gagal');
+
       card.querySelector('.h-badge.uploaded').style.display = 'inline-block';
       const assetBlock = card.querySelector('.h-asset');
       assetBlock.style.display = 'flex';
-      assetBlock.querySelector('.h-asset-id').textContent = assetId;
+      assetBlock.querySelector('.h-asset-id').textContent = 'rbxassetid://' + data.assetId;
+      updateModerationBadge(assetBlock.querySelector('.h-badge'), 'Reviewing');
       btn.textContent = currentLang === 'EN' ? '✓ Uploaded' : '✓ Terupload';
-    }, 1200);
+
+      startModerationPolling(card, data.assetId);
+    } catch (err) {
+      console.error(err);
+      alert((currentLang === 'EN' ? 'Upload failed: ' : 'Upload gagal: ') + err.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   }
  
   function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null, createdAt = null) {
