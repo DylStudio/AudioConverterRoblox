@@ -643,7 +643,7 @@
   .h-copy-btn:hover { color: var(--text-primary); }
   .h-copy-btn svg { width: 12px; height: 12px; }
  
-    .h-expire-note {
+  .h-expire-note {
     background: rgba(232,105,79,0.1);
     border: 1px solid rgba(232,105,79,0.22);
     color: #E8896F;
@@ -666,7 +666,7 @@
   }
   .h-download-btn:hover{filter:brightness(1.1);}
   .h-download-btn svg{width:14px;height:14px;}
-    .h-account-select{
+  .h-account-select{
     flex:1 1 160px;max-width:220px;min-width:140px;
     background:rgba(255,255,255,.03);
     border:1px solid rgba(255,255,255,.09);color:var(--text-muted);
@@ -1523,15 +1523,6 @@ body:before{
  
           <div class="linked-groups" id="linkedGroups">
             <div class="linked-groups-title" data-i18n="linked-groups-title">Linked Groups</div>
-            <div class="linked-group-item" data-group-id="81552591">
-              <div>
-                <div class="lg-name">FP Studio X</div>
-                <div class="lg-meta">Group ID: 81552591 | Creator: FADILPUTRA322</div>
-              </div>
-              <span class="lg-delete" onclick="removeLinkedGroup(this)">
-                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
-              </span>
-            </div>
           </div>
  
           <div class="field-block" style="margin-top:0;">
@@ -1652,13 +1643,12 @@ body:before{
           <label class="switch"><input type="checkbox" checked><span class="switch-slider"></span></label>
         </div>
  
-           <div class="settings-row">
+        <div class="settings-row" style="border-bottom:none;">
           <div>
             <div class="settings-row-title" data-i18n="settings-autodelete-title">Hapus Riwayat Otomatis</div>
             <div class="settings-row-sub" data-i18n="settings-autodelete-sub">Hapus kartu riwayat setelah 1 hari</div>
           </div>
           <label class="switch"><input type="checkbox" id="autoDeleteHistoryToggle" checked onchange="saveAutoDeleteHistoryPref(this.checked)"><span class="switch-slider"></span></label>
-        </div>
         </div>
       </div>
     </div>
@@ -1719,6 +1709,8 @@ body:before{
 <script>
   let currentLang = 'ID';
   const CONVERT_API_BASE = 'https://api.dylstudioapi.my.id';
+  let robloxConnectedState = false;
+  let robloxLabelState = '';
  
   // Waveform bars
   const wf = document.getElementById('waveform');
@@ -1744,18 +1736,17 @@ body:before{
 }
  
   // ===== Logout =====
-  // ===== Logout =====
-async function doLogout() {
-  document.getElementById('profileMenu').classList.remove('show');
-  try {
-    await fetch(`${CONVERT_API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
-  } catch (err) {
-    console.error('Gagal logout di server:', err);
+  async function doLogout() {
+    document.getElementById('profileMenu').classList.remove('show');
+    try {
+      await fetch(`${CONVERT_API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch (err) {
+      console.error('Gagal logout di server:', err);
+    }
+    document.getElementById('appRoot').classList.add('hidden');
+    document.getElementById('landingPage').classList.remove('hidden');
+    window.scrollTo(0, 0);
   }
-  document.getElementById('appRoot').classList.add('hidden');
-  document.getElementById('landingPage').classList.remove('hidden');
-  window.scrollTo(0, 0);
-}
  
   // ===== Page tab switching =====
   function switchPage(page, btn) {
@@ -2114,9 +2105,7 @@ let lastPreviewThumb = null;
     renderMonthlyHistory();
     updateTotalConvSub();
     refreshHistoryVisibility();
-    
-    const robloxConnected = localStorage.getItem('dyl_roblox_connected') === '1';
-  updateRobloxUI(robloxConnected, localStorage.getItem('dyl_roblox_label') || '');
+    updateRobloxUI(robloxConnectedState, robloxLabelState);
   }
  
   function toggleConnect(btn, platform) {
@@ -2125,9 +2114,9 @@ let lastPreviewThumb = null;
   if (linked) {
     if (confirm(confirmMsg)) {
       if (platform === 'Roblox') {
-        localStorage.removeItem('dyl_roblox_connected');
-        localStorage.removeItem('dyl_roblox_label');
-        updateRobloxUI(false, '');
+        fetch(`${CONVERT_API_BASE}/roblox/disconnect`, { method: 'DELETE', credentials: 'include' })
+          .then(() => updateRobloxUI(false, ''))
+          .catch(() => alert(currentLang === 'EN' ? 'Failed to disconnect.' : 'Gagal memutuskan koneksi.'));
       } else {
         btn.classList.remove('linked');
         btn.textContent = currentLang === 'EN' ? 'Connect' : 'Hubungkan';
@@ -2179,7 +2168,7 @@ let lastPreviewThumb = null;
     document.getElementById('advSettings').classList.toggle('open');
   }
  
-    function updateAdv(input, type) {
+  function updateAdv(input, type) {
     const val = input.value;
     if (type === 'speed') {
       document.getElementById('speedVal').textContent = val + 'x';
@@ -2222,33 +2211,98 @@ let lastPreviewThumb = null;
     document.getElementById('subviewGroup').classList.toggle('active', type === 'group');
   }
  
-  function saveGroupSettings() {
+  async function saveGroupSettings() {
     const groupId = document.getElementById('groupIdInput').value.trim();
     const creatorId = document.getElementById('groupCreatorIdInput').value.trim();
-    if (!groupId || !creatorId) {
-      alert(currentLang === 'EN' ? 'Please enter the Group ID and Roblox User ID (Creator) first.' : 'Masukkan Group ID dan Roblox User ID (Creator) terlebih dahulu.');
+    const apiKey = document.getElementById('groupApiKeyInput').value.trim();
+    if (!groupId || !creatorId || !apiKey) {
+      alert(currentLang === 'EN' ? 'Please enter the Group ID, Creator User ID, and API Key first.' : 'Masukkan Group ID, Roblox User ID (Creator), dan API Key terlebih dahulu.');
       return;
     }
-    alert(currentLang === 'EN' ? 'Roblox Group settings saved (simulation — not yet connected to a real server).' : 'Pengaturan Group Roblox berhasil disimpan (simulasi — belum tersambung ke server asli).');
-  }
- 
-  function removeLinkedGroup(el) {
-    if (confirm(currentLang === 'EN' ? 'Remove this linked group?' : 'Hapus grup yang terhubung ini?')) {
-      el.closest('.linked-group-item').remove();
+    try {
+      const res = await fetch(`${CONVERT_API_BASE}/roblox/connect-group`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId, creatorId, apiKey })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan');
+      document.getElementById('groupIdInput').value = '';
+      document.getElementById('groupCreatorIdInput').value = '';
+      document.getElementById('groupApiKeyInput').value = '';
+      await refreshGroups();
+      alert(currentLang === 'EN' ? 'Roblox Group connected.' : 'Roblox Group berhasil terhubung.');
+    } catch (err) {
+      alert((currentLang === 'EN' ? 'Failed: ' : 'Gagal: ') + err.message);
     }
   }
  
-  function saveApiKey() {
-  const id = document.getElementById('robloxIdInput').value.trim();
-  if (!id) {
-    alert(currentLang === 'EN' ? 'Please enter your Roblox User ID first.' : 'Masukkan Roblox User ID terlebih dahulu.');
-    return;
+  function renderLinkedGroups(groups) {
+    const container = document.getElementById('linkedGroups');
+    if (!container) return;
+    const titleHtml = `<div class="linked-groups-title" data-i18n="linked-groups-title">${I18N[currentLang]['linked-groups-title']}</div>`;
+    if (!groups || !groups.length) {
+      container.innerHTML = titleHtml + `<div style="font-size:12.5px;color:var(--text-faint);">${currentLang === 'EN' ? 'No groups linked yet.' : 'Belum ada grup yang terhubung.'}</div>`;
+      return;
+    }
+    container.innerHTML = titleHtml + groups.map(g => `
+      <div class="linked-group-item" data-db-id="${g.id}">
+        <div>
+          <div class="lg-name">${g.group_name || ('Group ' + g.group_id)}</div>
+          <div class="lg-meta">Group ID: ${g.group_id}</div>
+        </div>
+        <span class="lg-delete" onclick="removeLinkedGroup(this, ${g.id})">
+          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
+        </span>
+      </div>
+    `).join('');
   }
-  localStorage.setItem('dyl_roblox_connected', '1');
-  localStorage.setItem('dyl_roblox_label', id);
-  updateRobloxUI(true, id);
-  alert(currentLang === 'EN' ? 'Roblox account connected.' : 'Akun Roblox berhasil terhubung.');
-}
+ 
+  async function refreshGroups() {
+    try {
+      const res = await fetch(`${CONVERT_API_BASE}/auth/me`, { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json();
+      renderLinkedGroups(data.groups);
+    } catch (err) {
+      console.error('Gagal memuat daftar group:', err);
+    }
+  }
+ 
+  async function removeLinkedGroup(el, dbId) {
+    if (!confirm(currentLang === 'EN' ? 'Remove this linked group?' : 'Hapus grup yang terhubung ini?')) return;
+    try {
+      await fetch(`${CONVERT_API_BASE}/roblox/group/${dbId}`, { method: 'DELETE', credentials: 'include' });
+      el.closest('.linked-group-item').remove();
+    } catch (err) {
+      alert(currentLang === 'EN' ? 'Failed to remove group.' : 'Gagal menghapus grup.');
+    }
+  }
+ 
+  async function saveApiKey() {
+    const id = document.getElementById('robloxIdInput').value.trim();
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    if (!id || !apiKey) {
+      alert(currentLang === 'EN' ? 'Please enter your Roblox User ID and API Key.' : 'Masukkan Roblox User ID dan API Key terlebih dahulu.');
+      return;
+    }
+    try {
+      const res = await fetch(`${CONVERT_API_BASE}/roblox/connect`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ robloxUserId: id, apiKey })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan');
+      updateRobloxUI(true, id);
+      document.getElementById('apiKeyInput').value = '';
+      alert(currentLang === 'EN' ? 'Roblox account connected.' : 'Akun Roblox berhasil terhubung.');
+    } catch (err) {
+      alert((currentLang === 'EN' ? 'Failed: ' : 'Gagal: ') + err.message);
+    }
+  }
  
   function copyAsset(el) {
     const original = el.innerHTML;
@@ -2366,16 +2420,14 @@ let lastPreviewThumb = null;
   }
  
   function populateAccountSelect(selectEl) {
-    const robloxConnected = localStorage.getItem('dyl_roblox_connected') === '1';
-    const robloxLabel = localStorage.getItem('dyl_roblox_label') || '';
     let options = '';
-    if (robloxConnected) {
-      options += `<option value="personal:${robloxLabel}">${robloxLabel} (Personal)</option>`;
+    if (robloxConnectedState) {
+      options += `<option value="personal:${robloxLabelState}">${robloxLabelState} (Personal)</option>`;
     }
     document.querySelectorAll('.linked-group-item').forEach(g => {
       const name = g.querySelector('.lg-name')?.textContent || 'Group';
-      const gid = g.dataset.groupId || '';
-      options += `<option value="group:${gid}">${name} (Group)</option>`;
+      const dbId = g.dataset.dbId || '';
+      options += `<option value="group:${dbId}">${name} (Group)</option>`;
     });
     if (!options) {
       selectEl.innerHTML = `<option value="">${currentLang === 'EN' ? 'No account connected' : 'Belum ada akun'}</option>`;
@@ -2420,7 +2472,7 @@ let lastPreviewThumb = null;
   }
  
   function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null, createdAt = null) {
-  createdAt = createdAt || Date.now();
+    createdAt = createdAt || Date.now();
     const list = document.getElementById('historyList');
     const card = document.createElement('div');
     card.className = 'history-card new-entry';
@@ -2447,7 +2499,7 @@ let lastPreviewThumb = null;
             <span class="h-badge uploaded" style="display:none;">Uploaded</span>
             <span class="h-badge source">${sourceLabel}</span>
           </div>
-           <div class="h-title">${title}</div>
+          <div class="h-title">${title}</div>
           <a class="h-link" href="${sourceLabel === 'MP3 Upload' ? '#' : linkText}" target="_blank" rel="noopener noreferrer">${linkText}</a>
         </div>
       </div>
@@ -2487,7 +2539,7 @@ let lastPreviewThumb = null;
  
     if (save) {
       const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel, downloadUrl, speed, amp, dur, createdAt: Date.now() });
+      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel, downloadUrl, speed, amp, dur, createdAt });
       localStorage.setItem('dyl_history', JSON.stringify(saved));
     }
   }
@@ -2595,11 +2647,11 @@ let lastPreviewThumb = null;
     refreshHistoryVisibility();
   applyLanguage(currentLang);
 
-  // ===== Login Discord asli =====
+  // ===== Login Discord (server yang generate URL OAuth) =====
   ['discordLoginBtn', 'discordLoginBtn2', 'discordLoginBtn3'].forEach(id => {
-  const btn = document.getElementById(id);
-  if (btn) btn.href = `${CONVERT_API_BASE}/auth/discord`;
-});
+    const btn = document.getElementById(id);
+    if (btn) btn.href = `${CONVERT_API_BASE}/auth/discord`;
+  });
 
   function replaceUsernameEverywhere(newName) {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -2633,50 +2685,39 @@ let lastPreviewThumb = null;
   });
 }
 
+  // ===== Cek sesi login ke backend (cookie session) =====
   async function checkSession() {
-  try {
-    const res = await fetch(`${CONVERT_API_BASE}/auth/me`, { credentials: 'include' });
-    if (!res.ok) return;
-    const data = await res.json();
-    applyDiscordLogin(data.user);
-    updateRobloxUI(!!data.roblox, data.roblox ? data.roblox.roblox_user_id : '');
-    enterApp(); // pindah ke sini, supaya dashboard tetap muncul walau ada error di bawah
     try {
-      renderLinkedGroups(data.groups);
-    } catch (groupErr) {
-      console.error('Gagal render linked groups:', groupErr);
-    }
-    if (window.location.search) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  } catch (err) {
-    console.error('Gagal cek sesi login:', err);
-  }
-}
+      const res = await fetch(`${CONVERT_API_BASE}/auth/me`, { credentials: 'include' });
+      if (!res.ok) return; // belum login, tetap di landing page
+      const data = await res.json();
+      applyDiscordLogin(data.user);
+      updateRobloxUI(!!data.roblox, data.roblox ? data.roblox.roblox_user_id : '');
 
-function renderLinkedGroups(groups) {
-  const container = document.getElementById('linkedGroups');
-  if (!container) return;
-  const titleHtml = `<div class="linked-groups-title" data-i18n="linked-groups-title">Linked Groups</div>`;
-  if (!groups || groups.length === 0) {
-    container.innerHTML = titleHtml;
-    return;
+      enterApp(); // dipanggil duluan supaya dashboard tetap muncul walau ada error di bawah
+
+      try {
+        renderLinkedGroups(data.groups);
+      } catch (groupErr) {
+        console.error('Gagal render linked groups:', groupErr);
+      }
+
+      // pastikan status Roblox dari server yang menang (loadPersistedState jalan di enterApp)
+      updateRobloxUI(!!data.roblox, data.roblox ? data.roblox.roblox_user_id : '');
+      document.querySelectorAll('.h-account-select').forEach(populateAccountSelect);
+
+      if (window.location.search) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch (err) {
+      console.error('Gagal cek sesi login:', err);
+    }
   }
-  const itemsHtml = groups.map(g => `
-    <div class="linked-group-item" data-group-id="${g.group_id}">
-      <div>
-        <div class="lg-name">${g.group_name}</div>
-        <div class="lg-meta">Group ID: ${g.group_id}</div>
-      </div>
-      <span class="lg-delete" onclick="removeLinkedGroup(this)">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
-      </span>
-    </div>
-  `).join('');
-  container.innerHTML = titleHtml + itemsHtml;
-}
-  // ===== Sinkronisasi state asli (Roblox connect, history, total) =====
+
+  // ===== Sinkronisasi UI Roblox connect =====
 function updateRobloxUI(connected, label) {
+  robloxConnectedState = connected;
+  robloxLabelState = label;
   const name = document.getElementById('robloxAcctName');
   const badge = document.getElementById('robloxAcctBadge');
   const toggle = document.getElementById('robloxConnectToggle');
@@ -2700,15 +2741,15 @@ function updateRobloxUI(connected, label) {
   }
 }
 
+// CATATAN: status Roblox TIDAK dibaca dari localStorage di sini.
+// Sumber kebenarannya adalah server (lewat checkSession -> /auth/me).
 function loadPersistedState() {
-  const robloxConnected = localStorage.getItem('dyl_roblox_connected') === '1';
-  const robloxLabel = localStorage.getItem('dyl_roblox_label') || '';
-  updateRobloxUI(robloxConnected, robloxLabel);
-
-    let savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+  let savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
   const list = document.getElementById('historyList');
   list.innerHTML = '';
-  savedHistory.slice().reverse().forEach(h => addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur, h.createdAt));
+  savedHistory.slice().reverse().forEach(h =>
+    addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur, h.createdAt)
+  );
 
   const savedTotal = parseInt(localStorage.getItem('dyl_total_conv') || '0');
   document.getElementById('totalConv').textContent = savedTotal;
@@ -2716,7 +2757,7 @@ function loadPersistedState() {
   const savedMonthly = JSON.parse(localStorage.getItem('dyl_monthly') || 'null');
   if (savedMonthly) { monthlyData.length = 0; monthlyData.push(...savedMonthly); }
 
-   const savedQuota = localStorage.getItem('dyl_quota');
+  const savedQuota = localStorage.getItem('dyl_quota');
   if (savedQuota !== null) {
     quota = savedQuota === 'unlimited' ? Infinity : parseInt(savedQuota);
     document.getElementById('quotaLeft').textContent = quota === Infinity ? '∞' : quota;
@@ -2731,7 +2772,7 @@ function loadPersistedState() {
   if (autoDeleteToggle) autoDeleteToggle.checked = isAutoDeleteHistoryEnabled();
 }
 
-  function persistState() {
+function persistState() {
   try {
     localStorage.setItem('dyl_total_conv', document.getElementById('totalConv').textContent);
     localStorage.setItem('dyl_monthly', JSON.stringify(monthlyData));
@@ -2741,17 +2782,15 @@ function loadPersistedState() {
   }
 }
 
-  checkSession();
-  const EXPIRE_MS = 60 * 60 * 1000; // 1 jam
+// ===== Kartu riwayat kadaluarsa (file dihapus server setelah 1 jam) =====
+const EXPIRE_MS = 60 * 60 * 1000;
 
 function checkExpiredHistory() {
   const now = Date.now();
   document.querySelectorAll('#historyList .history-card').forEach(card => {
     const created = parseInt(card.dataset.created || '0');
     if (!created) return;
-    const isExpired = (now - created) > EXPIRE_MS;
-    const alreadyMarked = card.classList.contains('expired-card');
-    if (isExpired && !alreadyMarked) {
+    if ((now - created) > EXPIRE_MS && !card.classList.contains('expired-card')) {
       markCardExpired(card);
     }
   });
@@ -2772,6 +2811,8 @@ function markCardExpired(card) {
 
   const note = card.querySelector('.h-expire-note');
   if (note) {
+    // hapus data-i18n supaya applyLanguage tidak menimpa teks kadaluarsa ini
+    note.removeAttribute('data-i18n');
     note.textContent = currentLang === 'EN'
       ? 'File has been deleted (older than 1 hour). Please re-convert.'
       : 'File sudah dihapus (lebih dari 1 jam). Silakan convert ulang.';
@@ -2779,73 +2820,87 @@ function markCardExpired(card) {
 }
 
 setInterval(checkExpiredHistory, 30000);
-    function saveAdvSettings() {
-    try {
-      const speed = document.getElementById('speedSlider').value;
-      const amp = document.getElementById('ampSlider').value;
-      const durSlider = document.querySelector('.slider-row input[type="range"][min="30"]');
-      const dur = durSlider ? durSlider.value : 300;
-      localStorage.setItem('dyl_adv_settings', JSON.stringify({ speed, amp, dur }));
-    } catch (err) {
-      console.error('Gagal simpan pengaturan lanjutan:', err);
+
+// ===== Simpan / muat Pengaturan Lanjutan =====
+function saveAdvSettings() {
+  try {
+    const speed = document.getElementById('speedSlider').value;
+    const amp = document.getElementById('ampSlider').value;
+    const durSlider = document.querySelector('.slider-row input[type="range"][min="30"]');
+    const dur = durSlider ? durSlider.value : 300;
+    localStorage.setItem('dyl_adv_settings', JSON.stringify({ speed, amp, dur }));
+  } catch (err) {
+    console.error('Gagal simpan pengaturan lanjutan:', err);
+  }
+}
+
+function loadAdvSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('dyl_adv_settings') || 'null');
+    if (!saved) return;
+
+    const speedSlider = document.getElementById('speedSlider');
+    speedSlider.value = saved.speed;
+    updateAdv(speedSlider, 'speed');
+
+    const ampSlider = document.getElementById('ampSlider');
+    ampSlider.value = saved.amp;
+    updateAdv(ampSlider, 'amp');
+
+    const durSlider = document.querySelector('.slider-row input[type="range"][min="30"]');
+    if (durSlider) {
+      durSlider.value = saved.dur;
+      updateAdv(durSlider, 'dur');
     }
+  } catch (err) {
+    console.error('Gagal load pengaturan lanjutan:', err);
+  }
+}
+
+// ===== Hapus kartu riwayat otomatis setelah 1 hari =====
+const HISTORY_AUTO_DELETE_MS = 24 * 60 * 60 * 1000;
+
+function saveAutoDeleteHistoryPref(enabled) {
+  localStorage.setItem('dyl_autodelete_history', enabled ? '1' : '0');
+}
+
+function isAutoDeleteHistoryEnabled() {
+  const val = localStorage.getItem('dyl_autodelete_history');
+  return val === null ? true : val === '1';
+}
+
+function purgeOldHistoryCards() {
+  if (!isAutoDeleteHistoryEnabled()) return;
+
+  const now = Date.now();
+  let saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+  const before = saved.length;
+  saved = saved.filter(h => (now - (h.createdAt || 0)) <= HISTORY_AUTO_DELETE_MS);
+  if (saved.length !== before) {
+    localStorage.setItem('dyl_history', JSON.stringify(saved));
   }
 
-  function loadAdvSettings() {
-    try {
-      const saved = JSON.parse(localStorage.getItem('dyl_adv_settings') || 'null');
-      if (!saved) return;
-
-      const speedSlider = document.getElementById('speedSlider');
-      speedSlider.value = saved.speed;
-      updateAdv(speedSlider, 'speed');
-
-      const ampSlider = document.getElementById('ampSlider');
-      ampSlider.value = saved.amp;
-      updateAdv(ampSlider, 'amp');
-
-      const durSlider = document.querySelector('.slider-row input[type="range"][min="30"]');
-      if (durSlider) {
-        durSlider.value = saved.dur;
-        updateAdv(durSlider, 'dur');
-      }
-    } catch (err) {
-      console.error('Gagal load pengaturan lanjutan:', err);
+  document.querySelectorAll('#historyList .history-card').forEach(card => {
+    const created = parseInt(card.dataset.created || '0');
+    if (created && (now - created) > HISTORY_AUTO_DELETE_MS) {
+      card.remove();
     }
-  }
-    const HISTORY_AUTO_DELETE_MS = 24 * 60 * 60 * 1000; // 1 hari
+  });
 
-  function saveAutoDeleteHistoryPref(enabled) {
-    localStorage.setItem('dyl_autodelete_history', enabled ? '1' : '0');
-  }
+  refreshHistoryVisibility();
+}
 
-  function isAutoDeleteHistoryEnabled() {
-    const val = localStorage.getItem('dyl_autodelete_history');
-    return val === null ? true : val === '1'; // default ON kalau belum pernah diset
-  }
+setInterval(purgeOldHistoryCards, 60 * 60 * 1000);
 
-  function purgeOldHistoryCards() {
-    if (!isAutoDeleteHistoryEnabled()) return;
+const savedQuota = localStorage.getItem('dyl_quota');
+if (savedQuota !== null) {
+    quota = savedQuota === 'unlimited' ? Infinity : parseInt(savedQuota);
+    document.getElementById('quotaLeft').textContent = quota === Infinity ? '∞' : quota;
+}
+renderMonthlyHistory();
+updateTotalConvSub();
 
-    const now = Date.now();
-    let saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-    const before = saved.length;
-    saved = saved.filter(h => (now - (h.createdAt || 0)) <= HISTORY_AUTO_DELETE_MS);
-    if (saved.length !== before) {
-      localStorage.setItem('dyl_history', JSON.stringify(saved));
-    }
-
-    document.querySelectorAll('#historyList .history-card').forEach(card => {
-      const created = parseInt(card.dataset.created || '0');
-      if (created && (now - created) > HISTORY_AUTO_DELETE_MS) {
-        card.remove();
-      }
-    });
-
-    refreshHistoryVisibility();
-  }
-
-  setInterval(purgeOldHistoryCards, 60 * 60 * 1000); // cek tiap 1 jam
+  checkSession();
 </script>
  
 </body>
