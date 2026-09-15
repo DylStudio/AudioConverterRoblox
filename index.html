@@ -681,17 +681,32 @@
   }
   .h-download-btn:hover{filter:brightness(1.1);}
   .h-download-btn svg{width:14px;height:14px;}
-  .h-account-select{
-  flex:1 1 160px;max-width:220px;min-width:140px;
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.09);color:var(--text-muted);
-  padding:9px 12px;border-radius:9px;font-size:12.5px;
-  color-scheme: dark;
+  .h-account-dropdown { position: relative; flex: 1 1 160px; max-width: 220px; min-width: 140px; }
+.h-account-trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.09); color: var(--text-muted);
+  padding: 9px 12px; border-radius: 9px; font-size: 12.5px;
+  cursor: pointer; font-family: inherit;
 }
-.h-account-select option {
-  background: #1C1922;
-  color: var(--text-primary);
+.h-account-trigger:hover { border-color: rgba(255,255,255,.18); color: var(--text-primary); }
+.h-account-trigger svg { width: 13px; height: 13px; flex-shrink: 0; transition: transform 0.15s; }
+.h-account-dropdown.open .h-account-trigger svg { transform: rotate(180deg); }
+.h-account-menu {
+  display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+  background: var(--bg-panel-raised); border: 1px solid var(--border); border-radius: 9px;
+  padding: 6px; z-index: 15; box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+  max-height: 200px; overflow-y: auto;
 }
+.h-account-dropdown.open .h-account-menu { display: block; }
+.h-account-option {
+  padding: 8px 10px; border-radius: 7px; font-size: 12.5px; color: var(--text-muted);
+  cursor: pointer;
+}
+.h-account-option:hover { background: rgba(255,255,255,.06); color: var(--text-primary); }
+.h-account-option.selected { color: var(--accent); font-weight: 600; }
+.h-account-option.disabled { color: var(--text-faint); cursor: default; }
+.h-account-option.disabled:hover { background: transparent; }
   .h-upload-btn{
     display:inline-flex;align-items:center;gap:7px;
     background:linear-gradient(135deg,#ffc35d,#f2a52e);color:#171109;
@@ -2509,22 +2524,57 @@ function updateHistoryStorage(downloadUrl, patch) {
     return `${m}:${String(s).padStart(2, '0')}`;
   }
  
-  function populateAccountSelect(selectEl) {
-    let options = '';
+   function populateAccountSelect(wrapEl) {
+    if (!wrapEl) return;
+    const menu = wrapEl.querySelector('.h-account-menu');
+    const label = wrapEl.querySelector('.h-account-trigger-label');
+    let optionsHtml = '';
+    let hasAccounts = false;
+
     if (robloxConnectedState) {
-      options += `<option value="personal">${robloxLabelState} (Personal)</option>`;
+      hasAccounts = true;
+      optionsHtml += `<div class="h-account-option" data-value="personal" data-label="${robloxLabelState} (Personal)" onclick="selectAccountOption(this)">${robloxLabelState} (Personal)</div>`;
     }
     document.querySelectorAll('.linked-group-item').forEach(g => {
+      hasAccounts = true;
       const name = g.querySelector('.lg-name')?.textContent || 'Group';
       const dbId = g.dataset.dbId || '';
-      options += `<option value="group:${dbId}">${name} (Group)</option>`;
+      const val = `group:${dbId}`;
+      const lbl = `${name} (Group)`;
+      optionsHtml += `<div class="h-account-option" data-value="${val}" data-label="${lbl}" onclick="selectAccountOption(this)">${lbl}</div>`;
     });
-    if (!options) {
-      selectEl.innerHTML = `<option value="">${currentLang === 'EN' ? 'No account connected' : 'Belum ada akun'}</option>`;
-    } else {
-      selectEl.innerHTML = `<option value="">${currentLang === 'EN' ? 'Select account' : 'Pilih akun'}</option>` + options;
-    }
+
+    menu.innerHTML = hasAccounts
+      ? optionsHtml
+      : `<div class="h-account-option disabled">${currentLang === 'EN' ? 'No account connected' : 'Belum ada akun'}</div>`;
+
+    wrapEl.dataset.value = '';
+    if (label) label.textContent = currentLang === 'EN' ? 'Select account' : 'Pilih akun';
   }
+
+  function toggleAccountDropdown(btn) {
+    const wrap = btn.closest('.h-account-dropdown');
+    const isOpen = wrap.classList.contains('open');
+    document.querySelectorAll('.h-account-dropdown.open').forEach(el => el.classList.remove('open'));
+    if (!isOpen) wrap.classList.add('open');
+  }
+
+  function selectAccountOption(el) {
+    if (el.classList.contains('disabled')) return;
+    const wrap = el.closest('.h-account-dropdown');
+    wrap.dataset.value = el.dataset.value;
+    const label = wrap.querySelector('.h-account-trigger-label');
+    if (label) label.textContent = el.dataset.label;
+    wrap.querySelectorAll('.h-account-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    wrap.classList.remove('open');
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.h-account-dropdown')) {
+      document.querySelectorAll('.h-account-dropdown.open').forEach(el => el.classList.remove('open'));
+    }
+  });
  
    function downloadHistoryAudio(btn) {
   const url = btn.dataset.downloadUrl;
@@ -2598,8 +2648,8 @@ function updateHistoryStorage(downloadUrl, patch) {
 
   async function uploadHistoryToRoblox(btn) {
     const card = btn.closest('.history-card');
-    const select = card.querySelector('.h-account-select');
-    if (!select.value) {
+    const accountWrap = card.querySelector('.h-account-dropdown');
+    if (!accountWrap || !accountWrap.dataset.value) {
       alert(currentLang === 'EN' ? 'Please select an account first.' : 'Pilih akun terlebih dahulu.');
       return;
     }
@@ -2623,7 +2673,7 @@ function updateHistoryStorage(downloadUrl, patch) {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId, title, account: select.value })
+        body: JSON.stringify({ fileId, title, account: accountWrap.dataset.value })
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Upload gagal');
@@ -2708,7 +2758,13 @@ function updateHistoryStorage(downloadUrl, patch) {
           Download OGG
         </button>
         <div class="h-upload-row" style="display:${savedUploaded ? 'none' : 'flex'}; gap:10px; flex-wrap:wrap; align-items:center;">
-          <select class="h-account-select"></select>
+        <div class="h-account-dropdown">
+            <button type="button" class="h-account-trigger" onclick="toggleAccountDropdown(this)">
+              <span class="h-account-trigger-label">Pilih akun</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="h-account-menu"></div>
+          </div>
           <button class="h-upload-btn" onclick="uploadHistoryToRoblox(this)">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M20 4v5h-5M4 20v-5h5"/></svg>
             Upload to Roblox
@@ -2722,7 +2778,7 @@ function updateHistoryStorage(downloadUrl, patch) {
       <div class="h-expire-note" data-i18n="h-expire-note">File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.</div>
     `;
     list.prepend(card);
-    populateAccountSelect(card.querySelector('.h-account-select'));
+    populateAccountSelect(card.querySelector('.h-account-dropdown'));
     applyLanguage(currentLang);
     refreshHistoryVisibility();
     setTimeout(() => card.classList.remove('new-entry'), 600);
@@ -2902,7 +2958,7 @@ function updateHistoryStorage(downloadUrl, patch) {
 
       // pastikan status Roblox dari server yang menang (loadPersistedState jalan di enterApp)
       updateRobloxUI(!!data.roblox, data.roblox ? data.roblox.roblox_user_id : '');
-      document.querySelectorAll('.h-account-select').forEach(populateAccountSelect);
+      document.querySelectorAll('.h-account-dropdown').forEach(populateAccountSelect);
 
       if (window.location.search) {
         window.history.replaceState({}, document.title, window.location.pathname);
