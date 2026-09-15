@@ -2386,6 +2386,17 @@ let lastPreviewThumb = null;
 
     copyWithFeedback(el, scriptFormat);
   }
+function updateHistoryStorage(downloadUrl, patch) {
+    try {
+      const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+      const idx = saved.findIndex(h => h.downloadUrl === downloadUrl);
+      if (idx === -1) return;
+      saved[idx] = { ...saved[idx], ...patch };
+      localStorage.setItem('dyl_history', JSON.stringify(saved));
+    } catch (err) {
+      console.error('Gagal update riwayat tersimpan:', err);
+    }
+  }
  
   function removeCard(el) {
     if (confirm(currentLang === 'EN' ? 'Delete this conversion history?' : 'Hapus riwayat konversi ini?')) {
@@ -2559,8 +2570,9 @@ let lastPreviewThumb = null;
     });
   }
 
-  function startModerationPolling(card, assetId) {
+    function startModerationPolling(card, assetId) {
     const statusBadge = card.querySelector('.h-asset .h-badge');
+    const downloadUrl = card.querySelector('.h-download-btn')?.dataset.downloadUrl || '';
     let attempts = 0;
     const maxAttempts = 40; // ~10 menit, cek tiap 15 detik
     const interval = setInterval(async () => {
@@ -2570,6 +2582,7 @@ let lastPreviewThumb = null;
         if (res.ok) {
           const data = await res.json();
           updateModerationBadge(statusBadge, data.moderationState);
+          updateHistoryStorage(downloadUrl, { moderationState: data.moderationState });
           if (data.moderationState && data.moderationState !== 'Reviewing') {
             clearInterval(interval);
           }
@@ -2615,11 +2628,12 @@ let lastPreviewThumb = null;
 
       card.querySelector('.h-badge.uploaded').style.display = 'inline-block';
       const assetBlock = card.querySelector('.h-asset');
-      assetBlock.style.display = 'flex';
+      assetBlock.style.display = 'block';
       assetBlock.querySelector('.h-asset-id').textContent = 'rbxassetid://' + data.assetId;
       updateModerationBadge(assetBlock.querySelector('.h-badge'), 'Reviewing');
       btn.textContent = currentLang === 'EN' ? '✓ Uploaded' : '✓ Terupload';
 
+      updateHistoryStorage(downloadUrl, { uploaded: true, assetId: data.assetId, moderationState: 'Reviewing' });
       startModerationPolling(card, data.assetId);
     } catch (err) {
       console.error(err);
@@ -2629,7 +2643,7 @@ let lastPreviewThumb = null;
     }
   }
  
-  function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null, createdAt = null) {
+   function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null, createdAt = null, savedAssetId = null, savedUploaded = false, savedModState = null) {
     createdAt = createdAt || Date.now();
     const list = document.getElementById('historyList');
     const card = document.createElement('div');
@@ -2640,11 +2654,11 @@ let lastPreviewThumb = null;
     const dur = savedDur || document.getElementById('durVal').textContent;
     const maxDurNum = parseInt(dur) || 60;
     const resultDurLabel = existingDurLabel || formatDuration(Math.max(15, Math.floor(Math.random() * maxDurNum)));
- 
+
     const thumbInner = thumb
       ? `<img src="${thumb}" alt="">`
       : (sourceLabel === 'MP3 Upload' ? '🎧' : '🎵');
- 
+
     card.innerHTML = `
       <div class="h-delete" onclick="removeCard(this)">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
@@ -2654,7 +2668,7 @@ let lastPreviewThumb = null;
         <div style="flex:1; min-width:0;">
           <div class="h-badges">
             <span class="h-badge completed">Completed</span>
-            <span class="h-badge uploaded" style="display:none;">Uploaded</span>
+            <span class="h-badge uploaded" style="display:${savedUploaded ? 'inline-block' : 'none'};">Uploaded</span>
             <span class="h-badge source">${sourceLabel}</span>
           </div>
           <div class="h-title">${title}</div>
@@ -2668,10 +2682,10 @@ let lastPreviewThumb = null;
         <span><span data-i18n="lbl-resultdur">Durasi Hasil:</span> <b class="h-value">${resultDurLabel}</b></span>
       </div>
       <div class="h-ingame"><span data-i18n="lbl-ingame">⏱️ Kecepatan normal (in-game):</span> <b>${(1 / parseFloat(speed)).toFixed(2)}</b></div>
-            <div class="h-asset" style="display:none;">
+      <div class="h-asset" style="display:${savedUploaded ? 'block' : 'none'};">
         <div class="h-asset-top">
           <span class="h-badge completed" style="text-transform:none;" data-i18n="h-accepted">Diterima</span>
-          <span class="h-asset-id"></span>
+          <span class="h-asset-id">${savedUploaded && savedAssetId ? 'rbxassetid://' + savedAssetId : ''}</span>
         </div>
         <div class="h-copy-actions">
           <button class="h-copy-big-btn assetid" onclick="copyAssetId(this)">
@@ -2690,9 +2704,9 @@ let lastPreviewThumb = null;
           Download OGG
         </button>
         <select class="h-account-select"></select>
-        <button class="h-upload-btn" onclick="uploadHistoryToRoblox(this)">
+        <button class="h-upload-btn" onclick="uploadHistoryToRoblox(this)" ${savedUploaded ? 'disabled' : ''}>
           <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M20 4v5h-5M4 20v-5h5"/></svg>
-          Upload to Roblox
+          ${savedUploaded ? (currentLang === 'EN' ? '✓ Uploaded' : '✓ Terupload') : 'Upload to Roblox'}
         </button>
       </div>
       <div class="h-expire-note" data-i18n="h-expire-note">File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.</div>
@@ -2702,10 +2716,18 @@ let lastPreviewThumb = null;
     applyLanguage(currentLang);
     refreshHistoryVisibility();
     setTimeout(() => card.classList.remove('new-entry'), 600);
- 
+
+    if (savedUploaded) {
+      const statusBadge = card.querySelector('.h-asset .h-badge');
+      updateModerationBadge(statusBadge, savedModState || 'Reviewing');
+      if (savedModState === 'Reviewing' && savedAssetId) {
+        startModerationPolling(card, savedAssetId);
+      }
+    }
+
     if (save) {
       const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel, downloadUrl, speed, amp, dur, createdAt });
+      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel, downloadUrl, speed, amp, dur, createdAt, assetId: null, uploaded: false, moderationState: null });
       localStorage.setItem('dyl_history', JSON.stringify(saved));
     }
   }
@@ -2913,8 +2935,8 @@ function loadPersistedState() {
   let savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
   const list = document.getElementById('historyList');
   list.innerHTML = '';
-  savedHistory.slice().reverse().forEach(h =>
-    addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur, h.createdAt)
+    savedHistory.slice().reverse().forEach(h =>
+    addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur, h.createdAt, h.assetId, h.uploaded, h.moderationState)
   );
 
   const savedTotal = parseInt(localStorage.getItem('dyl_total_conv') || '0');
