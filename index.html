@@ -3208,7 +3208,7 @@ function updateRobloxUI(connected, label) {
 }
 
 // CATATAN: status Roblox TIDAK dibaca dari localStorage di sini.
-	async function fetchRobloxProfile(userId) {
+async function fetchRobloxProfile(userId) {
   try {
     const res = await fetch(`${CONVERT_API_BASE}/roblox/profile/${userId}`);
     if (!res.ok) throw new Error('fail');
@@ -3220,7 +3220,12 @@ function updateRobloxUI(connected, label) {
     const linkedNameEl = document.getElementById('linkedPersonalName');
     if (linkedNameEl) linkedNameEl.textContent = displayName;
 
-    const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox');
+    const detailEl = document.getElementById('robloxConnectDetail');
+    if (detailEl) {
+      detailEl.innerHTML = `${currentLang === 'EN' ? 'Creator account' : 'Akun kreator'} <b>${displayName}</b>`;
+    }
+
+    const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox, .platform-icon.roblox');
     avatarEls.forEach(el => {
       if (data.avatarUrl) {
         el.classList.add('roblox-avatar-img');
