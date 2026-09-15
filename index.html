@@ -6,6 +6,7 @@
 <title>DYL STUDIO — Convert Audio ke Roblox</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-EdfvhoR4MiaSijla"></script>
 <style>
   :root {
     --bg-base: #121016;
@@ -1806,38 +1807,79 @@ body:before{
     document.getElementById('upgradeModal').classList.remove('show');
     document.body.style.overflow = '';
   }
-  function buyPlan(name, price) {
-    const inputPass = prompt(currentLang === 'EN' 
-      ? 'Enter test password to simulate upgrade:' 
-      : 'Masukkan password test untuk simulasi upgrade:');
-    
-    if (inputPass === 'FADILPUTRA322') {
-      // Hitung tanggal expired berdasarkan nama paket
-      const days = name.includes('7') ? 7 : (name.includes('30') ? 30 : 0);
-      const expireDate = new Date();
-      expireDate.setDate(expireDate.getDate() + days);
-      const expireLabel = expireDate.toLocaleDateString(currentLang === 'EN' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    async function buyPlan(name, price) {
+    try {
+      const res = await fetch(`${CONVERT_API_BASE}/payment/checkout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planName: name })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Gagal membuat transaksi');
 
-      // Update kartu Paket Aktif
-      document.querySelector('.plan-card .stat-big').textContent = name;
-      const startLabel = new Date().toLocaleDateString(currentLang === 'EN' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-const endLabelShort = expireDate.toLocaleDateString(currentLang === 'EN' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-const planSub = document.querySelector('.plan-card .stat-sub');
-planSub.textContent = `${startLabel} — ${endLabelShort}`;
-
-      // Set kuota jadi unlimited
-      quota = Infinity;
-document.querySelector('.quota-pill').innerHTML = currentLang === 'EN'
-  ? `🎚️ <span><b id="quotaLeft">∞</b> Unlimited conversions · ${name} plan active</span>`
-  : `🎚️ <span><b id="quotaLeft">∞</b> Konversi tanpa batas · Paket ${name} aktif</span>`;
-
-      persistState();
       closeUpgradeModal();
-      alert(currentLang === 'EN'
-        ? `Test mode: Plan upgraded to ${name} successfully.`
-        : `Mode test: Paket berhasil diupgrade ke ${name}.`);
-    } else if (inputPass !== null) {
-      alert(currentLang === 'EN' ? 'Wrong password.' : 'Password salah.');
+
+      window.snap.pay(data.token, {
+        onSuccess: function(result) {
+          alert(currentLang === 'EN' ? 'Payment successful!' : 'Pembayaran berhasil!');
+          refreshUserPlanStatus();
+        },
+        onPending: function(result) {
+          alert(currentLang === 'EN' ? 'Waiting for your payment to complete.' : 'Menunggu pembayaran kamu selesai.');
+        },
+        onError: function(result) {
+          alert(currentLang === 'EN' ? 'Payment failed.' : 'Pembayaran gagal.');
+        },
+        onClose: function() {
+          console.log('Snap popup ditutup sebelum bayar selesai');
+        }
+      });
+    } catch (err) {
+      alert((currentLang === 'EN' ? 'Failed: ' : 'Gagal: ') + err.message);
+    }
+  }
+
+  function applyPlanStatus(user) {
+    const planBig = document.querySelector('.plan-card .stat-big');
+    const planSub = document.querySelector('.plan-card .stat-sub');
+    const isUnlimited = user.quota === -1;
+
+    if (planBig) planBig.textContent = user.plan === 'free' ? 'Free' : user.plan;
+    if (planSub) {
+      if (user.plan !== 'free' && user.plan_expires_at) {
+        const expireDate = new Date(user.plan_expires_at);
+        const label = expireDate.toLocaleDateString(currentLang === 'EN' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        planSub.textContent = (currentLang === 'EN' ? 'Active until ' : 'Aktif sampai ') + label;
+      } else {
+        planSub.textContent = currentLang === 'EN' ? 'Forever' : 'Selamanya';
+      }
+    }
+
+    if (isUnlimited) {
+      quota = Infinity;
+      const quotaPill = document.querySelector('.quota-pill');
+      if (quotaPill) {
+        quotaPill.innerHTML = currentLang === 'EN'
+          ? `🎚️ <span><b id="quotaLeft">∞</b> Unlimited conversions · ${user.plan} plan active</span>`
+          : `🎚️ <span><b id="quotaLeft">∞</b> Konversi tanpa batas · Paket ${user.plan} aktif</span>`;
+      }
+    } else if (typeof user.quota === 'number') {
+      quota = user.quota;
+      const quotaLeftEl = document.getElementById('quotaLeft');
+      if (quotaLeftEl) quotaLeftEl.textContent = quota;
+    }
+    persistState();
+  }
+
+  async function refreshUserPlanStatus() {
+    try {
+      const res = await fetch(`${CONVERT_API_BASE}/auth/me`, { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json();
+      applyPlanStatus(data.user);
+    } catch (err) {
+      console.error('Gagal memuat status paket:', err);
     }
   }
  
@@ -2338,7 +2380,7 @@ let lastPreviewThumb = null;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ robloxUserId: id, apiKey })
       });
-      const data = await res.json();
+      
       if (!res.ok) throw new Error(data.error || 'Gagal menyimpan');
       updateRobloxUI(true, id);
       document.getElementById('apiKeyInput').value = '';
@@ -2951,6 +2993,7 @@ function updateHistoryStorage(downloadUrl, patch) {
       if (!res.ok) return; // belum login, tetap di landing page
       const data = await res.json();
       applyDiscordLogin(data.user);
+      applyPlanStatus(data.user);
       updateRobloxUI(!!data.roblox, data.roblox ? data.roblox.roblox_user_id : '');
 
       enterApp(); // dipanggil duluan supaya dashboard tetap muncul walau ada error di bawah
