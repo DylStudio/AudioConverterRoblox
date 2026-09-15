@@ -694,7 +694,8 @@
 .h-account-trigger svg { width: 13px; height: 13px; flex-shrink: 0; transition: transform 0.15s; }
 .h-account-dropdown.open .h-account-trigger svg { transform: rotate(180deg); }
 .h-account-menu {
-  display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+  display: none; position: absolute; left: 0; top: calc(100% + 6px);
+  min-width: 200px; width: max-content; max-width: 260px;
   background: var(--bg-panel-raised); border: 1px solid var(--border); border-radius: 9px;
   padding: 6px; z-index: 15; box-shadow: 0 12px 30px rgba(0,0,0,0.4);
   max-height: 200px; overflow-y: auto;
@@ -703,6 +704,7 @@
 .h-account-option {
   padding: 8px 10px; border-radius: 7px; font-size: 12.5px; color: var(--text-muted);
   cursor: pointer;
+  white-space: nowrap;
 }
 .h-account-option:hover { background: rgba(255,255,255,.06); color: var(--text-primary); }
 .h-account-option.selected { color: var(--accent); font-weight: 600; }
