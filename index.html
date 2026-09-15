@@ -962,7 +962,7 @@ body:before{
   flex-shrink:0;
 }
 .h-thumb.has-thumb{
-  width:112px;height:63px;
+  width:150px;height:84px;
 }
 .h-badge{border-radius:6px}
 .h-link{color:#70dcd1}
@@ -1130,6 +1130,10 @@ body:before{
 .acct-card-info{display:flex;flex-direction:column;gap:8px;min-width:0;}
 .acct-card-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .acct-avatar{width:40px;height:40px;font-size:15px;flex-shrink:0;border-radius:50%;}
+.acct-avatar.roblox-avatar-img{
+  background-size:cover;background-position:center;
+  background-color:transparent;
+}
 .badge-linked{width:fit-content;}
 .plan-card-body{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
 .plan-crown{
@@ -3171,6 +3175,11 @@ function updateRobloxUI(connected, label) {
   robloxConnectedState = connected;
   robloxLabelState = label;
   renderLinkedPersonal();
+  if (connected && label) {
+    fetchRobloxProfile(label);
+  } else {
+    resetRobloxAvatar();
+  }
   const name = document.getElementById('robloxAcctName');
   const badge = document.getElementById('robloxAcctBadge');
   const toggle = document.getElementById('robloxConnectToggle');
@@ -3192,6 +3201,41 @@ function updateRobloxUI(connected, label) {
     toggle.classList.remove('linked');
     detail.textContent = currentLang === 'EN' ? 'No Roblox account connected yet' : 'Belum ada akun Roblox yang terhubung';
   }
+}
+
+// CATATAN: status Roblox TIDAK dibaca dari localStorage di sini.
+	async function fetchRobloxProfile(userId) {
+  try {
+    const res = await fetch(`${CONVERT_API_BASE}/roblox/profile/${userId}`);
+    if (!res.ok) throw new Error('fail');
+    const data = await res.json();
+    const displayName = data.displayName || data.username || userId;
+
+    const nameEl = document.getElementById('robloxAcctName');
+    if (nameEl) nameEl.textContent = displayName;
+    const linkedNameEl = document.getElementById('linkedPersonalName');
+    if (linkedNameEl) linkedNameEl.textContent = displayName;
+
+    const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox');
+    avatarEls.forEach(el => {
+      if (data.avatarUrl) {
+        el.classList.add('roblox-avatar-img');
+        el.style.backgroundImage = `url(${data.avatarUrl})`;
+        el.textContent = '';
+      }
+    });
+  } catch (err) {
+    console.error('Gagal ambil profil Roblox:', err);
+  }
+}
+
+function resetRobloxAvatar() {
+  const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox');
+  avatarEls.forEach(el => {
+    el.classList.remove('roblox-avatar-img');
+    el.style.backgroundImage = '';
+    el.textContent = 'R';
+  });
 }
 
 // CATATAN: status Roblox TIDAK dibaca dari localStorage di sini.
