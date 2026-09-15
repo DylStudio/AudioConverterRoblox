@@ -694,8 +694,10 @@
 .h-account-trigger-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .h-account-dropdown.open .h-account-trigger svg { transform: rotate(180deg); }
 .h-account-menu {
-  display: none; position: absolute; left: 0; top: calc(100% + 6px);
-  min-width: 200px; width: max-content; max-width: 260px;
+  display: none; position: absolute;
+  left: 50%; top: calc(100% + 6px);
+  transform: translateX(-50%);
+  min-width: 0; width: max-content; max-width: 260px;
   background: var(--bg-panel-raised); border: 1px solid var(--border); border-radius: 9px;
   padding: 6px; z-index: 15; box-shadow: 0 12px 30px rgba(0,0,0,0.4);
   max-height: 200px; overflow-y: auto;
