@@ -1923,12 +1923,16 @@ body:before{
           ? `<span><b id="quotaLeft">∞</b> Unlimited conversions · ${user.plan} plan active</span>`
           : `<span><b id="quotaLeft">∞</b> Konversi tanpa batas · Paket ${user.plan} aktif</span>`;
       }
-    } else if (typeof user.quota === 'number') {
+        } else if (typeof user.quota === 'number') {
       quota = user.quota;
       const quotaLeftEl = document.getElementById('quotaLeft');
       if (quotaLeftEl) quotaLeftEl.textContent = quota;
     }
-    persistState();
+    try {
+      localStorage.setItem('dyl_quota', quota === Infinity ? 'unlimited' : quota);
+    } catch (err) {
+      console.error('Gagal simpan quota:', err);
+    }
   }
 
   async function refreshUserPlanStatus() {
