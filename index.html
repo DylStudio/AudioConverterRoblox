@@ -2656,29 +2656,33 @@ function updateHistoryStorage(downloadUrl, patch) {
     renderMonthlyHistory();
   }
  
-    function updateTotalConvSub() {
+      function updateTotalConvSub() {
     const sub = document.getElementById('totalConvSub');
     if (!sub) return;
 
     const firstUse = getFirstUseDate();
-    const ageDays = (Date.now() - firstUse) / (24 * 60 * 60 * 1000);
+    const ageDays = Math.floor((Date.now() - firstUse) / (24 * 60 * 60 * 1000));
 
-    let n, label;
+    let label;
     if (ageDays < 7) {
-      n = sumLastNDays(1);
-      label = currentLang === 'EN' ? `${n} today` : `${n} hari ini`;
+      if (ageDays === 0) {
+        label = currentLang === 'EN' ? 'Today' : 'Hari ini';
+      } else {
+        label = currentLang === 'EN' ? `${ageDays} days` : `${ageDays} hari ini`;
+      }
     } else if (ageDays < 30) {
-      n = sumLastNDays(7);
-      label = currentLang === 'EN' ? `${n} this week` : `${n} minggu ini`;
+      const weeks = Math.floor(ageDays / 7);
+      label = currentLang === 'EN'
+        ? `${weeks} week${weeks > 1 ? 's' : ''}`
+        : `${weeks} minggu ini`;
     } else {
-      const nowKey = currentMonthKey();
-      const entry = monthlyData.find(m => m.key === nowKey);
-      n = entry ? entry.count : 0;
-      label = currentLang === 'EN' ? `${n} this month` : `${n} bulan ini`;
+      const months = Math.floor(ageDays / 30);
+      label = currentLang === 'EN'
+        ? `${months} month${months > 1 ? 's' : ''}`
+        : `${months} bulan ini`;
     }
     sub.textContent = label;
   }
- 
     // ===== History: pagination, 5 kartu per halaman =====
   const HISTORY_PAGE_SIZE = 5;
   let currentHistoryPage = 1;
