@@ -2402,7 +2402,7 @@ let lastPreviewThumb = null;
       <div class="linked-group-item" data-db-id="${g.id}">
         <div>
           <div class="lg-name">${g.group_name || ('Group ' + g.group_id)}</div>
-          <div class="lg-meta">Group ID: ${g.group_id}</div>
+          <div class="lg-meta">Group ID: ${g.group_id} | Creator: ${g.creator_id}</div>
         </div>
         <span class="lg-delete" onclick="removeLinkedGroup(this, ${g.id})">
           <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
