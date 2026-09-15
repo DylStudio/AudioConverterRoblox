@@ -642,6 +642,24 @@
   }
   .h-copy-btn:hover { color: var(--text-primary); }
   .h-copy-btn svg { width: 12px; height: 12px; }
+
+  .h-asset-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.h-copy-actions { display: flex; flex-direction: column; gap: 8px; }
+.h-copy-big-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 14px; border-radius: 10px; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: filter 0.15s; border: none; width: 100%;
+}
+.h-copy-big-btn svg { width: 15px; height: 15px; }
+.h-copy-big-btn.assetid {
+  background: rgba(79,209,197,0.14); color: var(--teal);
+  border: 1px solid rgba(79,209,197,0.3);
+}
+.h-copy-big-btn.assetid:hover { background: rgba(79,209,197,0.22); }
+.h-copy-big-btn.script {
+  background: linear-gradient(135deg,#ffc35d,#f2a52e); color: #171109;
+}
+.h-copy-big-btn.script:hover { filter: brightness(1.06); }
  
   .h-expire-note {
     background: rgba(232,105,79,0.1);
@@ -1982,7 +2000,8 @@ let lastPreviewThumb = null;
       'lbl-resultdur': 'Durasi Hasil:',
       'lbl-ingame': '⏱️ Kecepatan normal (in-game):',
       'h-accepted': 'Diterima',
-      'h-copy-format': 'Copy Untuk Format Script Dyl',
+      'h-copy-format': 'Salin Format Script',
+      'h-copy-assetid': 'Salin Asset ID',
       'h-expire-note': 'File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.'
     },
     EN: {
@@ -2081,7 +2100,8 @@ let lastPreviewThumb = null;
       'lbl-resultdur': 'Result Duration:',
       'lbl-ingame': '⏱️ Normal speed (in-game):',
       'h-accepted': 'Accepted',
-      'h-copy-format': 'Copy Dyl Script Format',
+      'h-copy-format': 'Copy Script Format',
+      'h-copy-assetid': 'Copy Asset ID',
       'h-expire-note': 'File is automatically deleted after 1 hour. Re-convert if you still need it.'
     }
   };
@@ -2333,31 +2353,38 @@ let lastPreviewThumb = null;
     }
   }
 
-  async function copyAsset(el) {
+    async function copyWithFeedback(el, text) {
     const original = el.innerHTML;
+    const success = await copyToClipboard(text);
+    el.innerHTML = success
+      ? (currentLang === 'EN' ? '✓ Copied' : '✓ Tersalin')
+      : (currentLang === 'EN' ? '✕ Copy failed' : '✕ Gagal menyalin');
+    setTimeout(() => { el.innerHTML = original; }, 1500);
+  }
+
+  function copyAssetId(el) {
+    const card = el.closest('.history-card');
+    const assetId = card?.querySelector('.h-asset-id')?.textContent?.trim() || '';
+    copyWithFeedback(el, assetId);
+  }
+
+  function copyScriptFormat(el) {
     const card = el.closest('.history-card');
     const assetId = card?.querySelector('.h-asset-id')?.textContent?.trim() || '';
     const rawTitle = card?.querySelector('.h-title')?.textContent?.trim() || 'Audio DYL STUDIO';
-    const songName = cleanRobloxTitle(rawTitle);
     const ingameSpeedText = card?.querySelector('.h-ingame b')?.textContent?.trim();
     const playbackSpeed = ingameSpeedText ? parseFloat(ingameSpeedText) : 1;
 
     const scriptFormat =
 `{
-SongName = "${songName}",
-SoundIds = {
-"${assetId}", -- Part 1
-},
-ImageId = "",
-PlaybackSpeed = ${isNaN(playbackSpeed) ? 1 : playbackSpeed},
-},`;
+					SongName = "${rawTitle}",
+					SoundId = "${assetId}",
+					ImageId = "",
+					PlaybackSpeed = ${isNaN(playbackSpeed) ? 1 : playbackSpeed}
 
-    const success = await copyToClipboard(scriptFormat);
+				},`;
 
-    el.innerHTML = success
-      ? (currentLang === 'EN' ? '✓ Copied' : '✓ Tersalin')
-      : (currentLang === 'EN' ? '✕ Copy failed' : '✕ Gagal menyalin');
-    setTimeout(() => { el.innerHTML = original; }, 1500);
+    copyWithFeedback(el, scriptFormat);
   }
  
   function removeCard(el) {
@@ -2641,13 +2668,21 @@ PlaybackSpeed = ${isNaN(playbackSpeed) ? 1 : playbackSpeed},
         <span><span data-i18n="lbl-resultdur">Durasi Hasil:</span> <b class="h-value">${resultDurLabel}</b></span>
       </div>
       <div class="h-ingame"><span data-i18n="lbl-ingame">⏱️ Kecepatan normal (in-game):</span> <b>${(1 / parseFloat(speed)).toFixed(2)}</b></div>
-      <div class="h-asset" style="display:none;">
-        <span class="h-badge completed" style="text-transform:none;" data-i18n="h-accepted">Diterima</span>
-        <span class="h-asset-id"></span>
-        <span class="h-copy-btn" onclick="copyAsset(this)">
-          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
-          <span data-i18n="h-copy-format">Salin Format</span>
-        </span>
+            <div class="h-asset" style="display:none;">
+        <div class="h-asset-top">
+          <span class="h-badge completed" style="text-transform:none;" data-i18n="h-accepted">Diterima</span>
+          <span class="h-asset-id"></span>
+        </div>
+        <div class="h-copy-actions">
+          <button class="h-copy-big-btn assetid" onclick="copyAssetId(this)">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+            <span data-i18n="h-copy-assetid">Salin Asset ID</span>
+          </button>
+          <button class="h-copy-big-btn script" onclick="copyScriptFormat(this)">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+            <span data-i18n="h-copy-format">Salin Format Script</span>
+          </button>
+        </div>
       </div>
       <div class="h-actions">
         <button class="h-download-btn" onclick="downloadHistoryAudio(this)" data-download-url="${downloadUrl || ''}">
