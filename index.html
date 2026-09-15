@@ -2422,7 +2422,7 @@ let lastPreviewThumb = null;
   function populateAccountSelect(selectEl) {
     let options = '';
     if (robloxConnectedState) {
-      options += `<option value="personal:${robloxLabelState}">${robloxLabelState} (Personal)</option>`;
+      options += `<option value="personal">${robloxLabelState} (Personal)</option>`;
     }
     document.querySelectorAll('.linked-group-item').forEach(g => {
       const name = g.querySelector('.lg-name')?.textContent || 'Group';
