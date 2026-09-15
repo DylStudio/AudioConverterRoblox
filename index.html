@@ -670,9 +670,10 @@
 
   .h-meta .h-value{color:var(--accent);font-weight:700;}
   .h-actions{
-    display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    display:flex;gap:10px;flex-wrap:nowrap;align-items:center;
     margin-top:14px;padding-top:14px;border-top:1px solid var(--border);
-  }
+    overflow-x:auto;
+}
   .h-download-btn{
     display:inline-flex;align-items:center;gap:7px;
     background:rgba(94,201,120,0.12);border:1px solid rgba(94,201,120,0.3);
@@ -681,7 +682,7 @@
   }
   .h-download-btn:hover{filter:brightness(1.1);}
   .h-download-btn svg{width:14px;height:14px;}
-  .h-account-dropdown { position: relative; flex: 1 1 130px; max-width: 220px; min-width: 110px; }
+  .h-account-dropdown { position: relative; flex: 1 1 160px; max-width: 220px; min-width: 140px; }
 .h-account-trigger {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   width: 100%; background: rgba(255,255,255,.03);
@@ -2757,7 +2758,7 @@ function updateHistoryStorage(downloadUrl, patch) {
           <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"/></svg>
           Download OGG
         </button>
-        <div class="h-upload-row" style="display:${savedUploaded ? 'none' : 'flex'}; gap:8px; flex-wrap:nowrap; align-items:center; overflow-x:auto;">
+        <div class="h-upload-row" style="display:${savedUploaded ? 'none' : 'flex'}; gap:10px; flex-wrap:nowrap; align-items:center; min-width:0;">
         <div class="h-account-dropdown">
             <button type="button" class="h-account-trigger" onclick="toggleAccountDropdown(this)">
               <span class="h-account-trigger-label">Pilih akun</span>
