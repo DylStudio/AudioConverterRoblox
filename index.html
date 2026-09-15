@@ -844,8 +844,8 @@ body:before{
   border:1px solid rgba(255,255,255,.07);
   box-shadow:0 12px 36px rgba(0,0,0,.18);
 }
-.stat-card{border-radius:16px;padding:18px 20px}
 .stat-card:hover,.panel:hover,.history-card:hover{border-color:rgba(255,255,255,.11)}
+.stat-card{border-radius:16px;padding:18px 20px}
 .stat-card .label{font-size:10px;letter-spacing:.13em}
 .stat-big{font-family:'Inter',sans-serif;font-size:27px;font-weight:750;letter-spacing:-.03em}
 .plan-card .stat-big{color:var(--accent)}
@@ -1982,7 +1982,7 @@ let lastPreviewThumb = null;
       'lbl-resultdur': 'Durasi Hasil:',
       'lbl-ingame': '⏱️ Kecepatan normal (in-game):',
       'h-accepted': 'Diterima',
-      'h-copy-format': 'Salin Format',
+      'h-copy-format': 'Copy Untuk Format Script Dyl',
       'h-expire-note': 'File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.'
     },
     EN: {
@@ -2081,7 +2081,7 @@ let lastPreviewThumb = null;
       'lbl-resultdur': 'Result Duration:',
       'lbl-ingame': '⏱️ Normal speed (in-game):',
       'h-accepted': 'Accepted',
-      'h-copy-format': 'Copy Format',
+      'h-copy-format': 'Copy Dyl Script Format',
       'h-expire-note': 'File is automatically deleted after 1 hour. Re-convert if you still need it.'
     }
   };
@@ -2106,6 +2106,8 @@ let lastPreviewThumb = null;
     updateTotalConvSub();
     refreshHistoryVisibility();
     updateRobloxUI(robloxConnectedState, robloxLabelState);
+    refreshModerationBadges();
+    refreshExpiredCards();
   }
  
   function toggleConnect(btn, platform) {
@@ -2304,9 +2306,57 @@ let lastPreviewThumb = null;
     }
   }
  
-  function copyAsset(el) {
+  async function copyToClipboard(text) {
+    // Cara utama: Clipboard API (butuh HTTPS / secure context)
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      // Fallback untuk browser lama / non-secure context
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '0';
+        ta.style.left = '0';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (err2) {
+        console.error('Gagal menyalin ke clipboard:', err2);
+        return false;
+      }
+    }
+  }
+
+  async function copyAsset(el) {
     const original = el.innerHTML;
-    el.innerHTML = currentLang === 'EN' ? '✓ Copied' : '✓ Tersalin';
+    const card = el.closest('.history-card');
+    const assetId = card?.querySelector('.h-asset-id')?.textContent?.trim() || '';
+    const rawTitle = card?.querySelector('.h-title')?.textContent?.trim() || 'Audio DYL STUDIO';
+    const songName = cleanRobloxTitle(rawTitle);
+    const ingameSpeedText = card?.querySelector('.h-ingame b')?.textContent?.trim();
+    const playbackSpeed = ingameSpeedText ? parseFloat(ingameSpeedText) : 1;
+
+    const scriptFormat =
+`{
+SongName = "${songName}",
+SoundIds = {
+"${assetId}", -- Part 1
+},
+ImageId = "",
+PlaybackSpeed = ${isNaN(playbackSpeed) ? 1 : playbackSpeed},
+},`;
+
+    const success = await copyToClipboard(scriptFormat);
+
+    el.innerHTML = success
+      ? (currentLang === 'EN' ? '✓ Copied' : '✓ Tersalin')
+      : (currentLang === 'EN' ? '✕ Copy failed' : '✕ Gagal menyalin');
     setTimeout(() => { el.innerHTML = original; }, 1500);
   }
  
@@ -2464,6 +2514,7 @@ let lastPreviewThumb = null;
   function updateModerationBadge(el, state) {
     if (!el) return;
     el.removeAttribute('data-i18n');
+    el.dataset.modState = state; // simpan state mentah supaya bisa diterjemahkan ulang saat ganti bahasa
     const map = {
       Reviewing: { id: 'Menunggu Moderasi', en: 'Under Review', cls: 'source' },
       Approved: { id: 'Diterima', en: 'Approved', cls: 'completed' },
@@ -2473,6 +2524,12 @@ let lastPreviewThumb = null;
     el.textContent = currentLang === 'EN' ? info.en : info.id;
     el.classList.remove('completed', 'expired', 'source');
     el.classList.add(info.cls);
+  }
+
+  function refreshModerationBadges() {
+    document.querySelectorAll('[data-mod-state]').forEach(el => {
+      updateModerationBadge(el, el.dataset.modState);
+    });
   }
 
   function startModerationPolling(card, assetId) {
@@ -2875,7 +2932,6 @@ function markCardExpired(card) {
 
   const completedBadge = card.querySelector('.h-badge.completed');
   if (completedBadge) {
-    completedBadge.textContent = currentLang === 'EN' ? 'Expired' : 'Kadaluarsa';
     completedBadge.classList.remove('completed');
     completedBadge.classList.add('expired');
   }
@@ -2885,12 +2941,25 @@ function markCardExpired(card) {
 
   const note = card.querySelector('.h-expire-note');
   if (note) {
-    // hapus data-i18n supaya applyLanguage tidak menimpa teks kadaluarsa ini
+    // hapus data-i18n supaya applyLanguage tidak menimpa teks kadaluarsa ini,
+    // teksnya sekarang diperbarui lewat refreshExpiredCards() setiap ganti bahasa
     note.removeAttribute('data-i18n');
-    note.textContent = currentLang === 'EN'
-      ? 'File has been deleted (older than 1 hour). Please re-convert.'
-      : 'File sudah dihapus (lebih dari 1 jam). Silakan convert ulang.';
   }
+
+  refreshExpiredCards();
+}
+
+function refreshExpiredCards() {
+  document.querySelectorAll('.history-card.expired-card').forEach(card => {
+    const badge = card.querySelector('.h-badge.expired');
+    if (badge) badge.textContent = currentLang === 'EN' ? 'Expired' : 'Kadaluarsa';
+    const note = card.querySelector('.h-expire-note');
+    if (note) {
+      note.textContent = currentLang === 'EN'
+        ? 'File has been deleted (older than 1 hour). Please re-convert.'
+        : 'File sudah dihapus (lebih dari 1 jam). Silakan convert ulang.';
+    }
+  });
 }
 
 setInterval(checkExpiredHistory, 30000);
