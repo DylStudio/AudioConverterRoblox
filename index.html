@@ -3241,17 +3241,20 @@ async function fetchRobloxProfile(userId) {
       detailEl.innerHTML = `${currentLang === 'EN' ? 'Creator account' : 'Akun kreator'} <b>${displayName}</b>`;
     }
 
-    const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox, .platform-icon.roblox');
-    avatarEls.forEach(el => {
-      if (data.avatarUrl) {
-        el.classList.add('roblox-avatar-img');
-        el.style.backgroundImage = `url(${data.avatarUrl})`;
-        el.textContent = '';
-      }
-    });
-  } catch (err) {
-    console.error('Gagal ambil profil Roblox:', err);
+   const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox, .platform-icon.roblox');
+avatarEls.forEach(el => {
+  if (data.avatarUrl) {
+    el.classList.add('roblox-avatar-img');
+    el.style.backgroundImage = `url(${data.avatarUrl})`;
+    el.textContent = '';
   }
+});
+
+// Refresh dropdown akun yang udah kadung digambar duluan sebelum nama ini selesai di-fetch
+document.querySelectorAll('.h-account-dropdown').forEach(populateAccountSelect);
+} catch (err) {
+  console.error('Gagal ambil profil Roblox:', err);
+}
 }
 
 function resetRobloxAvatar() {
