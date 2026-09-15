@@ -643,23 +643,20 @@
   .h-copy-btn:hover { color: var(--text-primary); }
   .h-copy-btn svg { width: 12px; height: 12px; }
 
-  .h-asset-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-.h-copy-actions { display: flex; flex-direction: column; gap: 8px; }
-.h-copy-big-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 11px 14px; border-radius: 10px; font-size: 13px; font-weight: 700;
-  cursor: pointer; transition: filter 0.15s; border: none; width: 100%;
+.h-asset-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.h-copy-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.h-copy-small-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--text-muted);
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: color 0.15s;
 }
-.h-copy-big-btn svg { width: 15px; height: 15px; }
-.h-copy-big-btn.assetid {
-  background: rgba(79,209,197,0.14); color: var(--teal);
-  border: 1px solid rgba(79,209,197,0.3);
-}
-.h-copy-big-btn.assetid:hover { background: rgba(79,209,197,0.22); }
-.h-copy-big-btn.script {
-  background: linear-gradient(135deg,#ffc35d,#f2a52e); color: #171109;
-}
-.h-copy-big-btn.script:hover { filter: brightness(1.06); }
+.h-copy-small-btn:hover { color: var(--text-primary); }
+.h-copy-small-btn svg { width: 12px; height: 12px; }
  
   .h-expire-note {
     background: rgba(232,105,79,0.1);
@@ -2682,20 +2679,20 @@ function updateHistoryStorage(downloadUrl, patch) {
         <span><span data-i18n="lbl-resultdur">Durasi Hasil:</span> <b class="h-value">${resultDurLabel}</b></span>
       </div>
       <div class="h-ingame"><span data-i18n="lbl-ingame">⏱️ Kecepatan normal (in-game):</span> <b>${(1 / parseFloat(speed)).toFixed(2)}</b></div>
-      <div class="h-asset" style="display:${savedUploaded ? 'block' : 'none'};">
+            <div class="h-asset" style="display:${savedUploaded ? 'block' : 'none'};">
         <div class="h-asset-top">
           <span class="h-badge completed" style="text-transform:none;" data-i18n="h-accepted">Diterima</span>
           <span class="h-asset-id">${savedUploaded && savedAssetId ? 'rbxassetid://' + savedAssetId : ''}</span>
-        </div>
-        <div class="h-copy-actions">
-          <button class="h-copy-big-btn assetid" onclick="copyAssetId(this)">
+          <span class="h-copy-small-btn" onclick="copyAssetId(this)">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
             <span data-i18n="h-copy-assetid">Salin Asset ID</span>
-          </button>
-          <button class="h-copy-big-btn script" onclick="copyScriptFormat(this)">
+          </span>
+        </div>
+        <div class="h-copy-actions">
+          <span class="h-copy-small-btn" onclick="copyScriptFormat(this)">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
             <span data-i18n="h-copy-format">Salin Format Script</span>
-          </button>
+          </span>
         </div>
       </div>
       <div class="h-actions">
