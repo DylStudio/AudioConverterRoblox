@@ -958,7 +958,11 @@ body:before{
 .history-card{border-radius:16px;padding:17px}
 .h-thumb{
   width:68px;height:68px;border:1px solid rgba(255,255,255,.06);
-  display:flex!important;align-items:center;justify-content:center
+  display:flex!important;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.h-thumb.has-thumb{
+  width:112px;height:63px;
 }
 .h-badge{border-radius:6px}
 .h-link{color:#70dcd1}
@@ -1136,6 +1140,14 @@ body:before{
 .plan-crown svg{width:17px;height:17px;}
  
 /* ===== Account type tabs (Personal / Group) ===== */
+.acct-api-link{
+  display:flex;align-items:center;gap:6px;
+  font-size:13px;font-weight:700;color:var(--accent);
+  text-decoration:underline;text-underline-offset:3px;
+  margin-bottom:16px;cursor:pointer;width:fit-content;
+}
+.acct-api-link:hover{color:#ffcb70;}
+.acct-api-link svg{width:14px;height:14px;flex-shrink:0;}
 .acct-type-tabs{display:flex;gap:8px;margin-bottom:16px;}
 .acct-type-tab{
   flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
@@ -1169,12 +1181,22 @@ body:before{
 .linked-group-item .lg-delete svg{width:16px;height:16px;}
  
 /* ===== History load more ===== */
-.history-loadmore{
-  width:100%;padding:12px 0;margin-top:6px;border-radius:10px;
-  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);
-  color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;
+.history-pagination{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:10px;padding:14px 16px;border-radius:12px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);
 }
-.history-loadmore:hover{background:rgba(255,255,255,.06);color:var(--text-primary);}
+.hp-info{font-size:13px;color:var(--text-faint);}
+.hp-nav{display:flex;gap:8px;}
+.hp-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
+  color:var(--text-muted);cursor:pointer;transition:all .15s;
+}
+.hp-btn:hover:not(:disabled){background:rgba(255,255,255,.08);color:var(--text-primary);}
+.hp-btn:disabled{opacity:.4;cursor:not-allowed;}
+.hp-btn svg{width:14px;height:14px;}
 .history-card.new-entry{animation:newEntry .5s ease;}
 @keyframes newEntry{
   from{opacity:0;transform:translateY(-10px);background:rgba(98,228,213,.1);}
@@ -1419,7 +1441,7 @@ body:before{
         <div class="panel-title" data-i18n="panel-convert-title">Convert Audio</div>
         <div class="panel-sub" data-i18n="panel-convert-sub">Upload file MP3 atau tempel link YouTube/SoundCloud</div>
  
-        <div class="quota-pill">🎚️ <span><b id="quotaLeft">2</b> <span data-i18n="quota-text">/ 2 konversi tersisa · Paket gratis, reset tiap 24 jam</span></span></div>
+        <div class="quota-pill"><span><b id="quotaLeft">2</b> <span data-i18n="quota-text">/ 2 konversi tersisa · Paket gratis, reset tiap 24 jam</span></span></div>
  
         <label style="font-size:12.5px; color: var(--text-faint); display:block; margin-bottom:6px;" data-i18n="label-link">Link YouTube atau SoundCloud</label>
         <input class="url-input" type="text" placeholder="Tempel link di sini..." id="urlInput" oninput="handleUrlInput(this.value)" style="margin-bottom:0;" data-i18n-ph="ph-link">
@@ -1501,10 +1523,15 @@ body:before{
         </div>
       </div>
  
-      <div class="panel">
+    <div class="panel">
         <div class="panel-title" data-i18n="panel-roblox-title">Akun Roblox</div>
         <div class="panel-sub" data-i18n="panel-roblox-sub">Hubungkan akun kreator kamu</div>
- 
+
+        <a class="acct-api-link" href="https://create.roblox.com/dashboard/credentials" target="_blank" rel="noopener noreferrer">
+          <span data-i18n="create-api-key-link">Create API Key on Roblox Creator Hub</span>
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        </a>
+
         <div class="acct-type-tabs">
           <div class="acct-type-tab active" id="tabPersonal" onclick="switchAcctType('personal')">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0115 0"/></svg>
@@ -1517,6 +1544,19 @@ body:before{
         </div>
  
         <div class="acct-subview active" id="subviewPersonal">
+          <div class="linked-groups" id="linkedPersonal" style="display:none;">
+            <div class="linked-groups-title" data-i18n="linked-personal-title">Akun Terhubung</div>
+            <div class="linked-group-item">
+              <div>
+                <div class="lg-name" id="linkedPersonalName">-</div>
+                <div class="lg-meta" data-i18n="connect-creator-acc">Akun kreator</div>
+              </div>
+              <span class="lg-delete" onclick="disconnectPersonalRoblox()">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
+              </span>
+            </div>
+          </div>
+
           <div class="steps-mini">
             <div class="st-title" data-i18n="steps-title">Cara mendapatkan API Key</div>
             <ol>
@@ -1600,9 +1640,21 @@ body:before{
         <p data-i18n="home-history-sub">Musik dan audio yang baru saja kamu convert muncul di sini</p>
       </div>
  
-      <div id="historyList"></div>
+            <div id="historyList"></div>
  
-      <button class="history-loadmore" id="loadMoreBtn" onclick="loadMoreHistory()" style="display:none;">Muat 10 riwayat berikutnya</button>
+      <div class="history-pagination" id="historyPagination" style="display:none;">
+        <span class="hp-info" id="hpInfo">Page 1 of 1</span>
+        <div class="hp-nav">
+          <button class="hp-btn" id="hpPrevBtn" onclick="goToHistoryPage(currentHistoryPage - 1)">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            <span data-i18n="pg-prev">Previous</span>
+          </button>
+          <button class="hp-btn" id="hpNextBtn" onclick="goToHistoryPage(currentHistoryPage + 1)">
+            <span data-i18n="pg-next">Next</span>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
     </div>
  
@@ -1859,10 +1911,10 @@ body:before{
     if (isUnlimited) {
       quota = Infinity;
       const quotaPill = document.querySelector('.quota-pill');
-      if (quotaPill) {
+     if (quotaPill) {
         quotaPill.innerHTML = currentLang === 'EN'
-          ? `🎚️ <span><b id="quotaLeft">∞</b> Unlimited conversions · ${user.plan} plan active</span>`
-          : `🎚️ <span><b id="quotaLeft">∞</b> Konversi tanpa batas · Paket ${user.plan} aktif</span>`;
+          ? `<span><b id="quotaLeft">∞</b> Unlimited conversions · ${user.plan} plan active</span>`
+          : `<span><b id="quotaLeft">∞</b> Konversi tanpa batas · Paket ${user.plan} aktif</span>`;
       }
     } else if (typeof user.quota === 'number') {
       quota = user.quota;
@@ -2066,6 +2118,10 @@ let lastPreviewThumb = null;
       'h-accepted': 'Diterima',
       'h-copy-format': 'Salin Format Script',
       'h-already-uploaded': 'Sudah diupload',
+	  'pg-prev': 'Sebelumnya',
+      'pg-next': 'Berikutnya',
+	  'create-api-key-link': 'Buat API Key di Roblox Creator Hub',
+	  'linked-personal-title': 'Akun Terhubung',
       'h-expire-note': 'File otomatis dihapus setelah 1 jam. Convert ulang jika masih dibutuhkan.'
     },
     EN: {
@@ -2166,6 +2222,10 @@ let lastPreviewThumb = null;
       'h-accepted': 'Accepted',
       'h-copy-format': 'Copy Script Format',
       'h-already-uploaded': 'Already uploaded',
+	  'pg-prev': 'Previous',
+      'pg-next': 'Next',
+	  'create-api-key-link': 'Create API Key on Roblox Creator Hub',
+	  'linked-personal-title': 'Connected Account',
       'h-expire-note': 'File is automatically deleted after 1 hour. Re-convert if you still need it.'
     }
   };
@@ -2365,7 +2425,29 @@ let lastPreviewThumb = null;
       alert(currentLang === 'EN' ? 'Failed to remove group.' : 'Gagal menghapus grup.');
     }
   }
- 
+	
+  function renderLinkedPersonal() {
+    const container = document.getElementById('linkedPersonal');
+    const nameEl = document.getElementById('linkedPersonalName');
+    if (!container || !nameEl) return;
+    if (robloxConnectedState) {
+      nameEl.textContent = robloxLabelState;
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+    }
+  }
+
+  async function disconnectPersonalRoblox() {
+    if (!confirm(currentLang === 'EN' ? 'Disconnect this Roblox account?' : 'Putuskan koneksi akun Roblox ini?')) return;
+    try {
+      await fetch(`${CONVERT_API_BASE}/roblox/disconnect`, { method: 'DELETE', credentials: 'include' });
+      updateRobloxUI(false, '');
+    } catch (err) {
+      alert(currentLang === 'EN' ? 'Failed to disconnect.' : 'Gagal memutuskan koneksi.');
+    }
+  }
+
   async function saveApiKey() {
     const id = document.getElementById('robloxIdInput').value.trim();
     const apiKey = document.getElementById('apiKeyInput').value.trim();
@@ -2486,9 +2568,51 @@ function updateHistoryStorage(downloadUrl, patch) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
  
-  // key: 'YYYY-MM', count: total konversi bulan itu
+    // key: 'YYYY-MM', count: total konversi bulan itu
   const monthlyData = [{ key: currentMonthKey(), count: 0 }];
- 
+
+  // ===== Data harian, buat hitung "X hari ini" / "X minggu ini" sebelum genap 1 bulan pakai =====
+  function todayKey(d = new Date()) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  const dailyData = [{ key: todayKey(), count: 0 }];
+
+  function getFirstUseDate() {
+    let v = localStorage.getItem('dyl_first_use');
+    if (!v) {
+      v = Date.now().toString();
+      localStorage.setItem('dyl_first_use', v);
+    }
+    return parseInt(v, 10);
+  }
+
+  function bumpCurrentDayCount() {
+    const key = todayKey();
+    let entry = dailyData.find(d => d.key === key);
+    if (!entry) {
+      entry = { key, count: 0 };
+      dailyData.push(entry);
+    }
+    entry.count += 1;
+    const cutoff = Date.now() - 40 * 24 * 60 * 60 * 1000;
+    for (let i = dailyData.length - 1; i >= 0; i--) {
+      const [y, m, d] = dailyData[i].key.split('-').map(Number);
+      if (new Date(y, m - 1, d).getTime() < cutoff) dailyData.splice(i, 1);
+    }
+  }
+
+  function sumLastNDays(n) {
+    const now = new Date();
+    let total = 0;
+    for (let i = 0; i < n; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const entry = dailyData.find(x => x.key === todayKey(d));
+      if (entry) total += entry.count;
+    }
+    return total;
+  }
+
   function monthLabel(key) {
     const [y, m] = key.split('-').map(Number);
     const names = currentLang === 'EN' ? MONTH_NAMES_EN : MONTH_NAMES_ID;
@@ -2515,7 +2639,7 @@ function updateHistoryStorage(downloadUrl, patch) {
     }).join('');
   }
  
-  function bumpCurrentMonthCount() {
+   function bumpCurrentMonthCount() {
     const nowKey = currentMonthKey();
     let entry = monthlyData.find(m => m.key === nowKey);
     if (!entry) {
@@ -2523,46 +2647,71 @@ function updateHistoryStorage(downloadUrl, patch) {
       monthlyData.push(entry);
     }
     entry.count += 1;
+    bumpCurrentDayCount();
     updateTotalConvSub();
     renderMonthlyHistory();
   }
  
-  function updateTotalConvSub() {
+    function updateTotalConvSub() {
     const sub = document.getElementById('totalConvSub');
     if (!sub) return;
-    const nowKey = currentMonthKey();
-    const entry = monthlyData.find(m => m.key === nowKey);
-    const n = entry ? entry.count : 0;
-    sub.textContent = currentLang === 'EN' ? `${n} this month` : `${n} bulan ini`;
+
+    const firstUse = getFirstUseDate();
+    const ageDays = (Date.now() - firstUse) / (24 * 60 * 60 * 1000);
+
+    let n, label;
+    if (ageDays < 7) {
+      n = sumLastNDays(1);
+      label = currentLang === 'EN' ? `${n} today` : `${n} hari ini`;
+    } else if (ageDays < 30) {
+      n = sumLastNDays(7);
+      label = currentLang === 'EN' ? `${n} this week` : `${n} minggu ini`;
+    } else {
+      const nowKey = currentMonthKey();
+      const entry = monthlyData.find(m => m.key === nowKey);
+      n = entry ? entry.count : 0;
+      label = currentLang === 'EN' ? `${n} this month` : `${n} bulan ini`;
+    }
+    sub.textContent = label;
   }
  
-  // ===== History: show max 10, load more beyond that =====
-  const HISTORY_PAGE_SIZE = 10;
+    // ===== History: pagination, 5 kartu per halaman =====
+  const HISTORY_PAGE_SIZE = 5;
+  let currentHistoryPage = 1;
+
   function refreshHistoryVisibility() {
     const cards = Array.from(document.querySelectorAll('#historyList .history-card'));
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    let visibleCount = parseInt(loadMoreBtn.dataset.visible || HISTORY_PAGE_SIZE);
+    const totalPages = Math.max(1, Math.ceil(cards.length / HISTORY_PAGE_SIZE));
+    if (currentHistoryPage > totalPages) currentHistoryPage = totalPages;
+    if (currentHistoryPage < 1) currentHistoryPage = 1;
+
+    const start = (currentHistoryPage - 1) * HISTORY_PAGE_SIZE;
+    const end = start + HISTORY_PAGE_SIZE;
     cards.forEach((card, i) => {
-      card.style.display = i < visibleCount ? '' : 'none';
+      card.style.display = (i >= start && i < end) ? '' : 'none';
     });
-    if (cards.length > visibleCount) {
-      const remaining = cards.length - visibleCount;
-      const n = Math.min(HISTORY_PAGE_SIZE, remaining);
-      loadMoreBtn.style.display = 'block';
-      loadMoreBtn.textContent = currentLang === 'EN'
-        ? `Load ${n} more items (${remaining} left)`
-        : `Muat ${n} riwayat berikutnya (${remaining} lagi)`;
+
+    const pagination = document.getElementById('historyPagination');
+    const info = document.getElementById('hpInfo');
+    const prevBtn = document.getElementById('hpPrevBtn');
+    const nextBtn = document.getElementById('hpNextBtn');
+
+    if (cards.length <= HISTORY_PAGE_SIZE) {
+      pagination.style.display = 'none';
     } else {
-      loadMoreBtn.style.display = 'none';
+      pagination.style.display = 'flex';
+      const pageLabel = currentLang === 'EN' ? 'Page' : 'Halaman';
+      const ofLabel = currentLang === 'EN' ? 'of' : 'dari';
+      info.textContent = `${pageLabel} ${currentHistoryPage} ${ofLabel} ${totalPages}`;
+      prevBtn.disabled = currentHistoryPage <= 1;
+      nextBtn.disabled = currentHistoryPage >= totalPages;
     }
-    loadMoreBtn.dataset.visible = visibleCount;
   }
- 
-  function loadMoreHistory() {
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const current = parseInt(loadMoreBtn.dataset.visible || HISTORY_PAGE_SIZE);
-    loadMoreBtn.dataset.visible = current + HISTORY_PAGE_SIZE;
+
+  function goToHistoryPage(page) {
+    currentHistoryPage = page;
     refreshHistoryVisibility();
+    document.getElementById('historyList').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
  
   function formatDuration(sec) {
@@ -2759,13 +2908,14 @@ function updateHistoryStorage(downloadUrl, patch) {
     const thumbInner = thumb
       ? `<img src="${thumb}" alt="">`
       : (sourceLabel === 'MP3 Upload' ? '🎧' : '🎵');
+    const thumbClass = thumb ? 'has-thumb' : '';
 
     card.innerHTML = `
       <div class="h-delete" onclick="removeCard(this)">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13"/></svg>
       </div>
       <div class="h-top">
-        <div class="h-thumb" style="background: linear-gradient(135deg, #3A3448, #221E29); display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden;">${thumbInner}</div>
+        <div class="h-thumb ${thumbClass}" style="background: linear-gradient(135deg, #3A3448, #221E29); display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden;">${thumbInner}</div>
         <div style="flex:1; min-width:0;">
           <div class="h-badges">
             <span class="h-badge completed">Completed</span>
@@ -3020,6 +3170,7 @@ function updateHistoryStorage(downloadUrl, patch) {
 function updateRobloxUI(connected, label) {
   robloxConnectedState = connected;
   robloxLabelState = label;
+  renderLinkedPersonal();
   const name = document.getElementById('robloxAcctName');
   const badge = document.getElementById('robloxAcctBadge');
   const toggle = document.getElementById('robloxConnectToggle');
@@ -3056,8 +3207,11 @@ function loadPersistedState() {
   const savedTotal = parseInt(localStorage.getItem('dyl_total_conv') || '0');
   document.getElementById('totalConv').textContent = savedTotal;
 
-  const savedMonthly = JSON.parse(localStorage.getItem('dyl_monthly') || 'null');
+    const savedMonthly = JSON.parse(localStorage.getItem('dyl_monthly') || 'null');
   if (savedMonthly) { monthlyData.length = 0; monthlyData.push(...savedMonthly); }
+
+  const savedDaily = JSON.parse(localStorage.getItem('dyl_daily') || 'null');
+  if (savedDaily) { dailyData.length = 0; dailyData.push(...savedDaily); }
 
   const savedQuota = localStorage.getItem('dyl_quota');
   if (savedQuota !== null) {
@@ -3078,6 +3232,7 @@ function persistState() {
   try {
     localStorage.setItem('dyl_total_conv', document.getElementById('totalConv').textContent);
     localStorage.setItem('dyl_monthly', JSON.stringify(monthlyData));
+    localStorage.setItem('dyl_daily', JSON.stringify(dailyData));
     localStorage.setItem('dyl_quota', quota === Infinity ? 'unlimited' : quota);
   } catch (err) {
     console.error('Gagal menyimpan state:', err);
