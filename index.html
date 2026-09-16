@@ -1918,7 +1918,7 @@ let robloxCardIsGroupFallback = false;
       }
     }
 
-    if (isUnlimited) {
+       if (isUnlimited) {
       quota = Infinity;
       window.dylUnlimitedPlan = user.plan;
       const quotaPill = document.querySelector('.quota-pill');
@@ -1927,18 +1927,18 @@ let robloxCardIsGroupFallback = false;
           ? `<span id="quotaLeft">Unlimited conversions · ${user.plan} plan active</span>`
           : `<span id="quotaLeft">Konversi tanpa batas · Paket ${user.plan} aktif</span>`;
       }
-    } else if (typeof user.quota === 'number') {
+        } else if (typeof user.quota === 'number') {
       quota = user.quota;
       const quotaLeftEl = document.getElementById('quotaLeft');
       if (quotaLeftEl) quotaLeftEl.textContent = quota;
     }
-    try {
-      localStorage.setItem('dyl_quota', quota === Infinity ? 'unlimited' : quota);
-    } catch (err) {
-      console.error('Gagal simpan quota:', err);
+
+    if (typeof user.total_conversions === 'number') {
+      const totalConvEl = document.getElementById('totalConv');
+      if (totalConvEl) totalConvEl.textContent = user.total_conversions;
     }
   }
-
+	
   async function refreshUserPlanStatus() {
     try {
       const res = await fetch(`${CONVERT_API_BASE}/auth/me`, { credentials: 'include' });
@@ -3136,9 +3136,7 @@ function updateHistoryStorage(downloadUrl, patch) {
       btn.disabled = false;
       progressWrap.classList.remove('show');
       resultCard.classList.add('show');
-      quota -= 1;
-      document.getElementById('quotaLeft').textContent = quota;
-      document.getElementById('totalConv').textContent = parseInt(document.getElementById('totalConv').textContent) + 1;
+      refreshUserPlanStatus();
       bumpCurrentMonthCount();
 
       const sourceLabel = hasFile ? 'MP3 Upload' : (url.includes('soundcloud') ? 'SoundCloud' : 'YouTube');
@@ -3380,10 +3378,7 @@ function loadPersistedState() {
     addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur, h.createdAt, h.assetId, h.uploaded, h.moderationState)
   );
 
-  const savedTotal = parseInt(localStorage.getItem('dyl_total_conv') || '0');
-  document.getElementById('totalConv').textContent = savedTotal;
-
-    const savedMonthly = JSON.parse(localStorage.getItem('dyl_monthly') || 'null');
+  const savedMonthly = JSON.parse(localStorage.getItem('dyl_monthly') || 'null');
   if (savedMonthly) { monthlyData.length = 0; monthlyData.push(...savedMonthly); }
 
   const savedDaily = JSON.parse(localStorage.getItem('dyl_daily') || 'null');
@@ -3402,10 +3397,8 @@ function loadPersistedState() {
 
 function persistState() {
   try {
-    localStorage.setItem('dyl_total_conv', document.getElementById('totalConv').textContent);
     localStorage.setItem('dyl_monthly', JSON.stringify(monthlyData));
     localStorage.setItem('dyl_daily', JSON.stringify(dailyData));
-    localStorage.setItem('dyl_quota', quota === Infinity ? 'unlimited' : quota);
   } catch (err) {
     console.error('Gagal menyimpan state:', err);
   }
@@ -3533,11 +3526,6 @@ function purgeOldHistoryCards() {
 
 setInterval(purgeOldHistoryCards, 60 * 60 * 1000);
 
-const savedQuota = localStorage.getItem('dyl_quota');
-if (savedQuota !== null) {
-    quota = savedQuota === 'unlimited' ? Infinity : parseInt(savedQuota);
-    document.getElementById('quotaLeft').textContent = quota === Infinity ? '∞' : quota;
-}
 renderMonthlyHistory();
 updateTotalConvSub();
 
