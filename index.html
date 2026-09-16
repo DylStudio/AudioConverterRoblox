@@ -1812,6 +1812,7 @@ body:before{
 let robloxLabelState = '';
 let lastKnownGroups = [];
  let robloxDisplayName = '';
+let robloxCardIsGroupFallback = false;
  
   // Waveform bars
   const wf = document.getElementById('waveform');
@@ -2277,7 +2278,13 @@ let lastPreviewThumb = null;
     refreshExpiredCards();
   }
  
-  function toggleConnect(btn, platform) {
+    function toggleConnect(btn, platform) {
+  if (platform === 'Roblox' && robloxCardIsGroupFallback && !robloxConnectedState) {
+    alert(currentLang === 'EN'
+      ? 'This shows your group creator account. Manage or remove it from the Group Account tab.'
+      : 'Ini menampilkan akun creator dari grup kamu. Kelola atau hapus lewat tab Group Account.');
+    return;
+  }
   const linked = btn.classList.contains('linked');
   const confirmMsg = currentLang === 'EN' ? `Disconnect ${platform} account?` : `Putuskan koneksi akun ${platform}?`;
   if (linked) {
@@ -3199,6 +3206,7 @@ function updateHistoryStorage(downloadUrl, patch) {
 
   // ===== Sinkronisasi UI Roblox connect =====
 function updateRobloxUI(connected, label) {
+  robloxCardIsGroupFallback = false;
   robloxConnectedState = connected;
   robloxLabelState = label;
   renderLinkedPersonal();
@@ -3297,6 +3305,13 @@ async function applyGroupFallbackConnection(group) {
     if (detail) {
       detail.innerHTML = `${currentLang === 'EN' ? 'Group creator account' : 'Akun creator grup'} <b>${displayName}</b> (${group.group_name || group.group_id})`;
     }
+
+    const toggle = document.getElementById('robloxConnectToggle');
+    if (toggle) {
+      toggle.textContent = currentLang === 'EN' ? 'Connected' : 'Terhubung';
+      toggle.classList.add('linked');
+    }
+    robloxCardIsGroupFallback = true;
 
     const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox, .platform-icon.roblox');
     avatarEls.forEach(el => {
