@@ -3075,10 +3075,6 @@ function updateHistoryStorage(downloadUrl, patch) {
       alert(currentLang === 'EN' ? 'Please enter a link or upload an MP3 file first.' : 'Masukkan link atau upload file MP3 terlebih dahulu.');
       return;
     }
-    if (quota <= 0) {
-      alert(currentLang === 'EN' ? 'Your free conversion quota is used up. Upgrade your plan to continue.' : 'Kuota konversi gratis habis. Upgrade paket untuk melanjutkan.');
-      return;
-    }
 
     const btn = document.getElementById('convertBtn');
     const progressWrap = document.getElementById('progressWrap');
