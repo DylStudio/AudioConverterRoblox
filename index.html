@@ -1901,7 +1901,7 @@ let robloxCardIsGroupFallback = false;
     }
   }
 
-  function applyPlanStatus(user) {
+   function applyPlanStatus(user) {
     const planBig = document.querySelector('.plan-card .stat-big');
     const planSub = document.querySelector('.plan-card .stat-sub');
     const isUnlimited = user.quota === -1;
@@ -1919,13 +1919,14 @@ let robloxCardIsGroupFallback = false;
 
     if (isUnlimited) {
       quota = Infinity;
+      window.dylUnlimitedPlan = user.plan;
       const quotaPill = document.querySelector('.quota-pill');
-     if (quotaPill) {
+      if (quotaPill) {
         quotaPill.innerHTML = currentLang === 'EN'
-          ? `<span><b id="quotaLeft">∞</b> Unlimited conversions · ${user.plan} plan active</span>`
-          : `<span><b id="quotaLeft">∞</b> Konversi tanpa batas · Paket ${user.plan} aktif</span>`;
+          ? `<span id="quotaLeft">Unlimited conversions · ${user.plan} plan active</span>`
+          : `<span id="quotaLeft">Konversi tanpa batas · Paket ${user.plan} aktif</span>`;
       }
-        } else if (typeof user.quota === 'number') {
+    } else if (typeof user.quota === 'number') {
       quota = user.quota;
       const quotaLeftEl = document.getElementById('quotaLeft');
       if (quotaLeftEl) quotaLeftEl.textContent = quota;
@@ -2254,7 +2255,7 @@ let lastPreviewThumb = null;
     }
   };
  
-  function applyLanguage(lang) {
+   function applyLanguage(lang) {
     const dict = I18N[lang] || I18N.ID;
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
@@ -2269,6 +2270,14 @@ let lastPreviewThumb = null;
         ? (lang === 'EN' ? 'Connected' : 'Terhubung')
         : (lang === 'EN' ? 'Connect' : 'Hubungkan');
     });
+    if (window.dylUnlimitedPlan) {
+      const quotaPill = document.querySelector('.quota-pill');
+      if (quotaPill) {
+        quotaPill.innerHTML = lang === 'EN'
+          ? `<span id="quotaLeft">Unlimited conversions · ${window.dylUnlimitedPlan} plan active</span>`
+          : `<span id="quotaLeft">Konversi tanpa batas · Paket ${window.dylUnlimitedPlan} aktif</span>`;
+      }
+    }
     document.documentElement.lang = lang.toLowerCase();
     renderMonthlyHistory();
     updateTotalConvSub();
@@ -3366,11 +3375,7 @@ function loadPersistedState() {
   const savedDaily = JSON.parse(localStorage.getItem('dyl_daily') || 'null');
   if (savedDaily) { dailyData.length = 0; dailyData.push(...savedDaily); }
 
-  const savedQuota = localStorage.getItem('dyl_quota');
-  if (savedQuota !== null) {
-    quota = savedQuota === 'unlimited' ? Infinity : parseInt(savedQuota);
-    document.getElementById('quotaLeft').textContent = quota === Infinity ? '∞' : quota;
-  }
+   // quota sekarang murni dari server (applyPlanStatus), localStorage tidak lagi dipakai
   renderMonthlyHistory();
   updateTotalConvSub();
   checkExpiredHistory();
