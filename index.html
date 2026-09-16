@@ -2599,28 +2599,30 @@ function toggleConnect(btn, platform) {
 
     copyWithFeedback(el, scriptFormat);
   }
-function updateHistoryStorage(downloadUrl, patch) {
+async function patchConversionServer(convId, patch) {
+    if (!convId) return;
     try {
-      const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-      const idx = saved.findIndex(h => h.downloadUrl === downloadUrl);
-      if (idx === -1) return;
-      saved[idx] = { ...saved[idx], ...patch };
-      localStorage.setItem('dyl_history', JSON.stringify(saved));
+      await fetch(`${CONVERT_API_BASE}/conversions/${convId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch)
+      });
     } catch (err) {
-      console.error('Gagal update riwayat tersimpan:', err);
+      console.error('Gagal update riwayat di server:', err);
     }
   }
  
-  function removeCard(el) {
+    function removeCard(el) {
     if (confirm(currentLang === 'EN' ? 'Delete this conversion history?' : 'Hapus riwayat konversi ini?')) {
       const card = el.closest('.history-card');
-      const linkText = card.querySelector('.h-link').textContent;
-      
-      // Hapus dari localStorage juga
-      let saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-      saved = saved.filter(h => h.link !== linkText);
-      localStorage.setItem('dyl_history', JSON.stringify(saved));
-      
+      const convId = card.dataset.id;
+
+      if (convId) {
+        fetch(`${CONVERT_API_BASE}/conversions/${convId}`, { method: 'DELETE', credentials: 'include' })
+          .catch(err => console.error('Gagal hapus riwayat di server:', err));
+      }
+
       card.remove();
       refreshHistoryVisibility();
     }
@@ -2892,7 +2894,7 @@ function updateHistoryStorage(downloadUrl, patch) {
 
     function startModerationPolling(card, assetId) {
     const statusBadge = card.querySelector('.h-asset .h-badge');
-    const downloadUrl = card.querySelector('.h-download-btn')?.dataset.downloadUrl || '';
+    const convId = card.dataset.id;
     let attempts = 0;
     const maxAttempts = 40; // ~10 menit, cek tiap 15 detik
     const interval = setInterval(async () => {
@@ -2902,7 +2904,7 @@ function updateHistoryStorage(downloadUrl, patch) {
         if (res.ok) {
           const data = await res.json();
           updateModerationBadge(statusBadge, data.moderationState);
-          updateHistoryStorage(downloadUrl, { moderationState: data.moderationState });
+          patchConversionServer(convId, { moderationStatus: data.moderationState });
           if (data.moderationState && data.moderationState !== 'Reviewing') {
             clearInterval(interval);
           }
@@ -2955,7 +2957,7 @@ function updateHistoryStorage(downloadUrl, patch) {
       card.querySelector('.h-upload-row').style.display = 'none';
       card.querySelector('.h-uploaded-label').style.display = 'inline-flex';
 
-      updateHistoryStorage(downloadUrl, { uploaded: true, assetId: data.assetId, moderationState: 'Reviewing' });
+      patchConversionServer(card.dataset.id, { assetId: data.assetId, moderationStatus: 'Reviewing', uploadedAccount: accountWrap.dataset.value });
       startModerationPolling(card, data.assetId);
     } catch (err) {
       console.error(err);
@@ -2965,12 +2967,13 @@ function updateHistoryStorage(downloadUrl, patch) {
     }
   }
  
-   function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null, createdAt = null, savedAssetId = null, savedUploaded = false, savedModState = null) {
+   function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null, createdAt = null, savedAssetId = null, savedUploaded = false, savedModState = null, convId = null) {
     createdAt = createdAt || Date.now();
     const list = document.getElementById('historyList');
     const card = document.createElement('div');
     card.className = 'history-card new-entry';
-    card.dataset.created = createdAt;
+  card.dataset.created = createdAt;
+    card.dataset.id = convId || '';
     const speed = savedSpeed || document.getElementById('speedVal').textContent;
     const amp = savedAmp || document.getElementById('ampVal').textContent;
     const dur = savedDur || document.getElementById('durVal').textContent;
@@ -3060,10 +3063,13 @@ function updateHistoryStorage(downloadUrl, patch) {
       }
     }
 
-    if (save) {
-      const saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-      saved.unshift({ source: sourceLabel, title, link: linkText, thumb, resultDurLabel, downloadUrl, speed, amp, dur, createdAt, assetId: null, uploaded: false, moderationState: null });
-      localStorage.setItem('dyl_history', JSON.stringify(saved));
+   if (save && convId) {
+      fetch(`${CONVERT_API_BASE}/conversions`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: convId, sourceLabel, title, link: linkText, thumb, downloadUrl, speed, amplifyDb: amp, maxDuration: dur, resultDuration: resultDurLabel })
+      }).catch(err => console.error('Gagal simpan riwayat ke server:', err));
     }
   }
  
@@ -3141,10 +3147,13 @@ function updateHistoryStorage(downloadUrl, patch) {
       const thumb = hasFile ? null : lastPreviewThumb;
       const fullDownloadUrl = CONVERT_API_BASE + data.downloadUrl;
       const resultDurLabel = data.durationSec ? formatDuration(Math.round(data.durationSec)) : null;
+      const convIdMatch = data.downloadUrl.match(/\/files\/([a-f0-9]{16})\.ogg/);
+      const convId = convIdMatch ? convIdMatch[1] : null;
       addHistoryEntry(sourceLabel, title, linkText, true, thumb, resultDurLabel, fullDownloadUrl,
         document.getElementById('speedVal').textContent,
         document.getElementById('ampVal').textContent,
-        document.getElementById('durVal').textContent);
+        document.getElementById('durVal').textContent,
+        null, null, false, null, convId);
 
       // Kosongkan input link & file setelah convert
       document.getElementById('urlInput').value = '';
@@ -3366,13 +3375,29 @@ function applyRobloxCardStatus() {
 
 // CATATAN: status Roblox TIDAK dibaca dari localStorage di sini.
 // Sumber kebenarannya adalah server (lewat checkSession -> /auth/me).
-function loadPersistedState() {
-  let savedHistory = JSON.parse(localStorage.getItem('dyl_history') || '[]');
+async function loadPersistedState() {
   const list = document.getElementById('historyList');
   list.innerHTML = '';
-    savedHistory.slice().reverse().forEach(h =>
-    addHistoryEntry(h.source, h.title, h.link, false, h.thumb, h.resultDurLabel, h.downloadUrl, h.speed, h.amp, h.dur, h.createdAt, h.assetId, h.uploaded, h.moderationState)
-  );
+
+  try {
+    const res = await fetch(`${CONVERT_API_BASE}/conversions`, { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      const rows = (data.conversions || []).slice().reverse(); // server: terbaru duluan, kita balik biar urutan render benar
+      rows.forEach(c => {
+        const uploaded = !!c.asset_id;
+        const createdAtMs = c.created_at ? new Date(c.created_at.replace(' ', 'T') + 'Z').getTime() : Date.now();
+        const speedTxt = c.speed != null ? c.speed + 'x' : document.getElementById('speedVal').textContent;
+        const ampTxt = c.amplify_db != null ? (c.amplify_db > 0 ? '+' : '') + c.amplify_db + 'dB' : document.getElementById('ampVal').textContent;
+        const durTxt = c.max_duration != null ? c.max_duration + 's' : document.getElementById('durVal').textContent;
+        const modState = (c.moderation_status && c.moderation_status !== 'none') ? c.moderation_status : null;
+        addHistoryEntry(c.source_label, c.title, c.link, false, c.thumb, c.result_duration, c.download_url,
+          speedTxt, ampTxt, durTxt, createdAtMs, c.asset_id, uploaded, modState, c.id);
+      });
+    }
+  } catch (err) {
+    console.error('Gagal memuat riwayat dari server:', err);
+  }
 
   const savedMonthly = JSON.parse(localStorage.getItem('dyl_monthly') || 'null');
   if (savedMonthly) { monthlyData.length = 0; monthlyData.push(...savedMonthly); }
@@ -3380,10 +3405,9 @@ function loadPersistedState() {
   const savedDaily = JSON.parse(localStorage.getItem('dyl_daily') || 'null');
   if (savedDaily) { dailyData.length = 0; dailyData.push(...savedDaily); }
 
-   // quota sekarang murni dari server (applyPlanStatus), localStorage tidak lagi dipakai
   renderMonthlyHistory();
   updateTotalConvSub();
-  checkExpiredHistory();
+ checkExpiredHistory();
   loadAdvSettings();
   purgeOldHistoryCards();
 
@@ -3503,16 +3527,14 @@ function purgeOldHistoryCards() {
   if (!isAutoDeleteHistoryEnabled()) return;
 
   const now = Date.now();
-  let saved = JSON.parse(localStorage.getItem('dyl_history') || '[]');
-  const before = saved.length;
-  saved = saved.filter(h => (now - (h.createdAt || 0)) <= HISTORY_AUTO_DELETE_MS);
-  if (saved.length !== before) {
-    localStorage.setItem('dyl_history', JSON.stringify(saved));
-  }
-
   document.querySelectorAll('#historyList .history-card').forEach(card => {
     const created = parseInt(card.dataset.created || '0');
     if (created && (now - created) > HISTORY_AUTO_DELETE_MS) {
+      const convId = card.dataset.id;
+      if (convId) {
+        fetch(`${CONVERT_API_BASE}/conversions/${convId}`, { method: 'DELETE', credentials: 'include' })
+          .catch(err => console.error('Gagal hapus riwayat lama di server:', err));
+      }
       card.remove();
     }
   });
