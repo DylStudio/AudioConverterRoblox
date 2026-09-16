@@ -3072,17 +3072,16 @@ async function patchConversionServer(convId, patch) {
   let quotaResetAtMs = null;
   let quotaCountdownInterval = null;
 
-  function formatQuotaCountdown() {
-    if (!quotaResetAtMs) return '';
+   function formatQuotaCountdown() {
+    if (!quotaResetAtMs) return '00:00:00';
     const diffMs = quotaResetAtMs - Date.now();
-    if (diffMs <= 0) return currentLang === 'EN' ? 'Refreshing...' : 'Memperbarui...';
-    const totalMin = Math.floor(diffMs / 60000);
-    const h = Math.floor(totalMin / 60);
-    const m = totalMin % 60;
-    const label = currentLang === 'EN' ? 'Resets in' : 'Reset dalam';
-    const hLabel = currentLang === 'EN' ? 'h' : 'j';
-    const mLabel = currentLang === 'EN' ? 'm' : 'm';
-    return `${label} ${h}${hLabel} ${m}${mLabel}`;
+    if (diffMs <= 0) return '00:00:00';
+    const totalSec = Math.floor(diffMs / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
   }
 
   function renderQuotaPill() {
@@ -3102,7 +3101,9 @@ async function patchConversionServer(convId, patch) {
       return;
     }
 
-    quotaPill.innerHTML = `<b id="quotaLeft">0</b> <span id="quotaCountdownText">${formatQuotaCountdown()}</span>`;
+    const zeroLabel = currentLang === 'EN' ? 'conversions left' : 'konversi tersisa';
+    const resetLabel = currentLang === 'EN' ? 'Resets in' : 'Reset dalam';
+    quotaPill.innerHTML = `<span><b id="quotaLeft">0</b> <span>/ 5 ${zeroLabel} · ${resetLabel} <span id="quotaCountdownText">${formatQuotaCountdown()}</span></span></span>`;
   }
 
   function startQuotaCountdown() {
