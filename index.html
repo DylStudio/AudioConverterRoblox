@@ -3196,9 +3196,9 @@ async function patchConversionServer(convId, patch) {
   [
     document.getElementById('userAvatarInitials'),
     document.getElementById('userAvatarInitialsMenu'),
-    document.getElementById('discordAcctAvatar'),        // kartu di Beranda
-    document.getElementById('discordAcctAvatarAkun'),    // ikon kecil di halaman Akun
-    document.getElementById('userAvatarInitialsAkun')    // foto besar di halaman Akun
+    document.getElementById('discordAcctAvatar'),
+    document.getElementById('discordAcctAvatarAkun'),
+    document.getElementById('userAvatarInitialsAkun')
   ].forEach(el => {
     if (!el) return;
     if (user.avatar) {
@@ -3210,6 +3210,14 @@ async function patchConversionServer(convId, patch) {
       el.textContent = initials;
     }
   });
+
+  // Sinkronkan preferensi auto-delete history dari server (bukan cuma localStorage)
+  if (typeof user.auto_delete_history === 'number') {
+    const enabled = user.auto_delete_history === 1;
+    localStorage.setItem('dyl_autodelete_history', enabled ? '1' : '0');
+    const toggle = document.getElementById('autoDeleteHistoryToggle');
+    if (toggle) toggle.checked = enabled;
+  }
 }
 
   // ===== Cek sesi login ke backend (cookie session) =====
@@ -3516,6 +3524,12 @@ const HISTORY_AUTO_DELETE_MS = 24 * 60 * 60 * 1000;
 
 function saveAutoDeleteHistoryPref(enabled) {
   localStorage.setItem('dyl_autodelete_history', enabled ? '1' : '0');
+  fetch(`${CONVERT_API_BASE}/auth/preferences`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ autoDeleteHistory: enabled })
+  }).catch(err => console.error('Gagal simpan preferensi ke server:', err));
 }
 
 function isAutoDeleteHistoryEnabled() {
