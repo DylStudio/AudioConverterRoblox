@@ -3209,13 +3209,11 @@ async function patchConversionServer(convId, patch) {
         document.getElementById('durVal').textContent,
         null, null, false, null, convId);
 
-      // Kosongkan input link & file setelah convert
+     // Kosongkan input link & file setelah convert
       document.getElementById('urlInput').value = '';
       clearUrlPreview();
       fileInput.value = '';
       fileChosen.classList.remove('show');
-
-      persistState();
      } catch (err) {
       clearInterval(labelInterval);
       console.error(err);
@@ -3446,7 +3444,8 @@ async function loadPersistedState() {
     const res = await fetch(`${CONVERT_API_BASE}/conversions`, { credentials: 'include' });
     if (res.ok) {
       const data = await res.json();
-      const rows = (data.conversions || []).slice().reverse(); // server: terbaru duluan, kita balik biar urutan render benar
+      const allRows = data.conversions || [];
+      const rows = allRows.slice().reverse(); // server: terbaru duluan, kita balik biar urutan render benar
       rows.forEach(c => {
         const uploaded = !!c.asset_id;
         const createdAtMs = c.created_at ? new Date(c.created_at.replace(' ', 'T') + 'Z').getTime() : Date.now();
@@ -3457,16 +3456,35 @@ async function loadPersistedState() {
         addHistoryEntry(c.source_label, c.title, c.link, false, c.thumb, c.result_duration, c.download_url,
           speedTxt, ampTxt, durTxt, createdAtMs, c.asset_id, uploaded, modState, c.id);
       });
+
+      // Hitung ringkasan bulanan & harian langsung dari data server (bukan localStorage lagi)
+      const monthMap = {};
+      const dayMap = {};
+      const cutoffDayMs = Date.now() - 40 * 24 * 60 * 60 * 1000;
+      allRows.forEach(c => {
+        if (!c.created_at) return;
+        const ms = new Date(c.created_at.replace(' ', 'T') + 'Z').getTime();
+        const d = new Date(ms);
+        const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        monthMap[mKey] = (monthMap[mKey] || 0) + 1;
+        if (ms >= cutoffDayMs) {
+          const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          dayMap[dKey] = (dayMap[dKey] || 0) + 1;
+        }
+      });
+      const nowMonthKey = currentMonthKey();
+      if (!monthMap[nowMonthKey]) monthMap[nowMonthKey] = 0;
+      monthlyData.length = 0;
+      Object.keys(monthMap).forEach(k => monthlyData.push({ key: k, count: monthMap[k] }));
+
+      const nowDayKey = todayKey();
+      if (!dayMap[nowDayKey]) dayMap[nowDayKey] = 0;
+      dailyData.length = 0;
+      Object.keys(dayMap).forEach(k => dailyData.push({ key: k, count: dayMap[k] }));
     }
   } catch (err) {
     console.error('Gagal memuat riwayat dari server:', err);
   }
-
-  const savedMonthly = JSON.parse(localStorage.getItem('dyl_monthly') || 'null');
-  if (savedMonthly) { monthlyData.length = 0; monthlyData.push(...savedMonthly); }
-
-  const savedDaily = JSON.parse(localStorage.getItem('dyl_daily') || 'null');
-  if (savedDaily) { dailyData.length = 0; dailyData.push(...savedDaily); }
 
   renderMonthlyHistory();
   updateTotalConvSub();
@@ -3476,15 +3494,6 @@ async function loadPersistedState() {
 
   const autoDeleteToggle = document.getElementById('autoDeleteHistoryToggle');
   if (autoDeleteToggle) autoDeleteToggle.checked = isAutoDeleteHistoryEnabled();
-}
-
-function persistState() {
-  try {
-    localStorage.setItem('dyl_monthly', JSON.stringify(monthlyData));
-    localStorage.setItem('dyl_daily', JSON.stringify(dailyData));
-  } catch (err) {
-    console.error('Gagal menyimpan state:', err);
-  }
 }
 
 // ===== Kartu riwayat kadaluarsa (file dihapus server setelah 1 jam) =====
