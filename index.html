@@ -1447,7 +1447,7 @@ body:before{
         <div class="panel-title" data-i18n="panel-convert-title">Convert Audio</div>
         <div class="panel-sub" data-i18n="panel-convert-sub">Upload file MP3 atau tempel link YouTube/SoundCloud</div>
  
-        <div class="quota-pill"><span><b id="quotaLeft">5</b> <span data-i18n="quota-text">/ 5 konversi tersisa · Paket gratis, reset tiap 12 jam</span></span></div>
+        <div class="quota-pill"><span><b id="quotaLeft">5</b> <span data-i18n="quota-text">/ 5 konversi tersisa</span></span></div>
  
         <label style="font-size:12.5px; color: var(--text-faint); display:block; margin-bottom:6px;" data-i18n="label-link">Link YouTube atau SoundCloud</label>
         <input class="url-input" type="text" placeholder="Tempel link di sini..." id="urlInput" oninput="handleUrlInput(this.value)" style="margin-bottom:0;" data-i18n-ph="ph-link">
@@ -1901,7 +1901,7 @@ let robloxCardIsGroupFallback = false;
     }
   }
 
-     function applyPlanStatus(user) {
+       function applyPlanStatus(user) {
     const planBig = document.querySelector('.plan-card .stat-big');
     const planSub = document.querySelector('.plan-card .stat-sub');
     const isUnlimited = user.quota === -1;
@@ -1918,19 +1918,21 @@ let robloxCardIsGroupFallback = false;
       }
     }
 
-       if (isUnlimited) {
+    if (isUnlimited) {
       quota = Infinity;
       window.dylUnlimitedPlan = user.plan;
-      const quotaPill = document.querySelector('.quota-pill');
-      if (quotaPill) {
-        quotaPill.innerHTML = currentLang === 'EN'
-          ? `<span id="quotaLeft">Unlimited conversions · ${user.plan} plan active</span>`
-          : `<span id="quotaLeft">Konversi tanpa batas · Paket ${user.plan} aktif</span>`;
-      }
-        } else if (typeof user.quota === 'number') {
-      quota = user.quota;
-      const quotaLeftEl = document.getElementById('quotaLeft');
-      if (quotaLeftEl) quotaLeftEl.textContent = quota;
+      quotaResetAtMs = null;
+    } else {
+      window.dylUnlimitedPlan = null;
+      if (typeof user.quota === 'number') quota = user.quota;
+      quotaResetAtMs = user.quotaResetAt ? new Date(user.quotaResetAt).getTime() : null;
+    }
+    renderQuotaPill();
+    if (!isUnlimited && quota === 0 && quotaResetAtMs) {
+      startQuotaCountdown();
+    } else if (quotaCountdownInterval) {
+      clearInterval(quotaCountdownInterval);
+      quotaCountdownInterval = null;
     }
 
     if (typeof user.total_conversions === 'number') {
@@ -2078,7 +2080,7 @@ let lastPreviewThumb = null;
       'btn-upgrade': 'Upgrade Paket',
       'panel-convert-title': 'Convert Audio',
       'panel-convert-sub': 'Upload file MP3 atau tempel link YouTube/SoundCloud',
-      'quota-text': '/ 5 konversi tersisa · Paket gratis, reset tiap 12 jam',
+      'quota-text': '/ 5 konversi tersisa',
       'label-link': 'Link YouTube atau SoundCloud',
       'ph-link': 'Tempel link di sini...',
       'divider-or': 'ATAU',
@@ -2182,7 +2184,7 @@ let lastPreviewThumb = null;
       'btn-upgrade': 'Upgrade Plan',
       'panel-convert-title': 'Convert Audio',
       'panel-convert-sub': 'Upload an MP3 file or paste a YouTube/SoundCloud link',
-      'quota-text': '/ 5 conversions left · Free plan, resets every 12 hours',
+      'quota-text': '/ 5 conversions left',
       'label-link': 'YouTube or SoundCloud link',
       'ph-link': 'Paste link here...',
       'divider-or': 'OR',
@@ -2271,14 +2273,7 @@ let lastPreviewThumb = null;
         ? (lang === 'EN' ? 'Connected' : 'Terhubung')
         : (lang === 'EN' ? 'Connect' : 'Hubungkan');
     });
-    if (window.dylUnlimitedPlan) {
-      const quotaPill = document.querySelector('.quota-pill');
-      if (quotaPill) {
-        quotaPill.innerHTML = lang === 'EN'
-          ? `<span id="quotaLeft">Unlimited conversions · ${window.dylUnlimitedPlan} plan active</span>`
-          : `<span id="quotaLeft">Konversi tanpa batas · Paket ${window.dylUnlimitedPlan} aktif</span>`;
-      }
-    }
+       renderQuotaPill();
         if (window.dylPlanInfo) {
       const planSub = document.querySelector('.plan-card .stat-sub');
       if (planSub) {
@@ -3073,7 +3068,62 @@ async function patchConversionServer(convId, patch) {
     }
   }
  
-  let quota = 5;
+    let quota = 5;
+  let quotaResetAtMs = null;
+  let quotaCountdownInterval = null;
+
+  function formatQuotaCountdown() {
+    if (!quotaResetAtMs) return '';
+    const diffMs = quotaResetAtMs - Date.now();
+    if (diffMs <= 0) return currentLang === 'EN' ? 'Refreshing...' : 'Memperbarui...';
+    const totalMin = Math.floor(diffMs / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    const label = currentLang === 'EN' ? 'Resets in' : 'Reset dalam';
+    const hLabel = currentLang === 'EN' ? 'h' : 'j';
+    const mLabel = currentLang === 'EN' ? 'm' : 'm';
+    return `${label} ${h}${hLabel} ${m}${mLabel}`;
+  }
+
+  function renderQuotaPill() {
+    const quotaPill = document.querySelector('.quota-pill');
+    if (!quotaPill) return;
+
+    if (window.dylUnlimitedPlan) {
+      quotaPill.innerHTML = currentLang === 'EN'
+        ? `<span id="quotaLeft">Unlimited conversions · ${window.dylUnlimitedPlan} plan active</span>`
+        : `<span id="quotaLeft">Konversi tanpa batas · Paket ${window.dylUnlimitedPlan} aktif</span>`;
+      return;
+    }
+
+    if (quota > 0) {
+      const label = currentLang === 'EN' ? 'conversions left' : 'konversi tersisa';
+      quotaPill.innerHTML = `<span><b id="quotaLeft">${quota}</b> <span>/ 5 ${label}</span></span>`;
+      return;
+    }
+
+    quotaPill.innerHTML = `<b id="quotaLeft">0</b> <span id="quotaCountdownText">${formatQuotaCountdown()}</span>`;
+  }
+
+  function startQuotaCountdown() {
+    if (quotaCountdownInterval) clearInterval(quotaCountdownInterval);
+    quotaCountdownInterval = setInterval(() => {
+      if (quota > 0 || !quotaResetAtMs) {
+        clearInterval(quotaCountdownInterval);
+        quotaCountdownInterval = null;
+        return;
+      }
+      if (Date.now() >= quotaResetAtMs) {
+        clearInterval(quotaCountdownInterval);
+        quotaCountdownInterval = null;
+        refreshUserPlanStatus();
+        return;
+      }
+      const el = document.getElementById('quotaCountdownText');
+      if (el) el.textContent = formatQuotaCountdown();
+    }, 1000);
+  }
+
   async function startConvert() {
     const url = document.getElementById('urlInput').value.trim();
     const hasFile = fileChosen.classList.contains('show');
@@ -3162,12 +3212,13 @@ async function patchConversionServer(convId, patch) {
       fileChosen.classList.remove('show');
 
       persistState();
-    } catch (err) {
+     } catch (err) {
       clearInterval(labelInterval);
       console.error(err);
       btn.disabled = false;
       progressWrap.classList.remove('show');
       alert(currentLang === 'EN' ? 'Conversion failed: ' + err.message : 'Convert gagal: ' + err.message);
+      refreshUserPlanStatus();
     }
   }
  
