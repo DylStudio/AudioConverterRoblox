@@ -2278,21 +2278,33 @@ let lastPreviewThumb = null;
     refreshExpiredCards();
   }
  
-    function toggleConnect(btn, platform) {
+function toggleConnect(btn, platform) {
   if (platform === 'Roblox' && robloxCardIsGroupFallback && !robloxConnectedState) {
-    alert(currentLang === 'EN'
-      ? 'This shows your group creator account. Manage or remove it from the Group Account tab.'
-      : 'Ini menampilkan akun creator dari grup kamu. Kelola atau hapus lewat tab Group Account.');
+    const group = lastKnownGroups[0];
+    if (!group) return;
+    const groupLabel = group.group_name || ('Group ' + group.group_id);
+    const confirmMsg = currentLang === 'EN'
+      ? `Disconnect linked group "${groupLabel}"? This will remove the fallback Roblox account shown here.`
+      : `Putuskan koneksi grup "${groupLabel}"? Ini akan menghapus tampilan akun Roblox fallback ini.`;
+    if (confirm(confirmMsg)) {
+      fetch(`${CONVERT_API_BASE}/roblox/group/${group.id}`, { method: 'DELETE', credentials: 'include' })
+        .then(() => refreshGroups())
+        .catch(() => alert(currentLang === 'EN' ? 'Failed to disconnect.' : 'Gagal memutuskan koneksi.'));
+    }
     return;
   }
   const linked = btn.classList.contains('linked');
-  const confirmMsg = currentLang === 'EN' ? `Disconnect ${platform} account?` : `Putuskan koneksi akun ${platform}?`;
+   const confirmMsg = platform === 'Discord'
+    ? (currentLang === 'EN' ? 'Disconnecting Discord will log you out of DYL STUDIO. Continue?' : 'Memutuskan koneksi Discord akan mengeluarkan kamu dari DYL STUDIO. Lanjutkan?')
+    : (currentLang === 'EN' ? `Disconnect ${platform} account?` : `Putuskan koneksi akun ${platform}?`);
   if (linked) {
     if (confirm(confirmMsg)) {
       if (platform === 'Roblox') {
         fetch(`${CONVERT_API_BASE}/roblox/disconnect`, { method: 'DELETE', credentials: 'include' })
           .then(() => updateRobloxUI(false, ''))
           .catch(() => alert(currentLang === 'EN' ? 'Failed to disconnect.' : 'Gagal memutuskan koneksi.'));
+            } else if (platform === 'Discord') {
+        doLogout();
       } else {
         btn.classList.remove('linked');
         btn.textContent = currentLang === 'EN' ? 'Connect' : 'Hubungkan';
