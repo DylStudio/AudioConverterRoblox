@@ -1809,7 +1809,8 @@ body:before{
   let currentLang = 'ID';
   const CONVERT_API_BASE = 'https://api.dylstudioapi.my.id';
  let robloxConnectedState = false;
- let robloxLabelState = '';
+let robloxLabelState = '';
+let lastKnownGroups = [];
  let robloxDisplayName = '';
  
   // Waveform bars
@@ -2406,14 +2407,14 @@ let lastPreviewThumb = null;
     }
   }
  
-  function renderLinkedGroups(groups) {
-    const container = document.getElementById('linkedGroups');
-    if (!container) return;
-    const titleHtml = `<div class="linked-groups-title" data-i18n="linked-groups-title">${I18N[currentLang]['linked-groups-title']}</div>`;
-    if (!groups || !groups.length) {
-      container.innerHTML = titleHtml + `<div style="font-size:12.5px;color:var(--text-faint);">${currentLang === 'EN' ? 'No groups linked yet.' : 'Belum ada grup yang terhubung.'}</div>`;
-      return;
-    }
+ function renderLinkedGroups(groups) {
+  lastKnownGroups = groups || [];
+  const container = document.getElementById('linkedGroups');
+  if (!container) return;
+  const titleHtml = `<div class="linked-groups-title" data-i18n="linked-groups-title">${I18N[currentLang]['linked-groups-title']}</div>`;
+  if (!groups || !groups.length) {
+    container.innerHTML = titleHtml + `<div style="font-size:12.5px;color:var(--text-faint);">${currentLang === 'EN' ? 'No groups linked yet.' : 'Belum ada grup yang terhubung.'}</div>`;
+  } else {
     container.innerHTML = titleHtml + groups.map(g => `
       <div class="linked-group-item" data-db-id="${g.id}">
         <div>
@@ -2426,6 +2427,8 @@ let lastPreviewThumb = null;
       </div>
     `).join('');
   }
+  applyRobloxCardStatus();
+}
  
   async function refreshGroups() {
     try {
@@ -2441,7 +2444,8 @@ let lastPreviewThumb = null;
   async function removeLinkedGroup(el, dbId) {
     if (!confirm(currentLang === 'EN' ? 'Remove this linked group?' : 'Hapus grup yang terhubung ini?')) return;
     try {
-      await fetch(`${CONVERT_API_BASE}/roblox/group/${dbId}`, { method: 'DELETE', credentials: 'include' });
+    await fetch(`${CONVERT_API_BASE}/roblox/group/${dbId}`, { method: 'DELETE', credentials: 'include' });
+    await refreshGroups();
       el.closest('.linked-group-item').remove();
     } catch (err) {
       alert(currentLang === 'EN' ? 'Failed to remove group.' : 'Gagal menghapus grup.');
@@ -3268,6 +3272,52 @@ function resetRobloxAvatar() {
     el.style.backgroundImage = '';
     el.textContent = 'R';
   });
+}
+
+async function applyGroupFallbackConnection(group) {
+  const creatorId = group.creator_id;
+  if (!creatorId) return;
+  try {
+    const res = await fetch(`${CONVERT_API_BASE}/roblox/profile/${creatorId}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const displayName = data.displayName || data.username || creatorId;
+
+    const nameEl = document.getElementById('robloxAcctName');
+    if (nameEl) nameEl.textContent = displayName;
+
+    const badge = document.getElementById('robloxAcctBadge');
+    if (badge) {
+      badge.textContent = currentLang === 'EN' ? 'Connected' : 'Terhubung';
+      badge.style.background = 'rgba(79,209,197,0.14)';
+      badge.style.color = 'var(--teal)';
+    }
+
+    const detail = document.getElementById('robloxConnectDetail');
+    if (detail) {
+      detail.innerHTML = `${currentLang === 'EN' ? 'Group creator account' : 'Akun creator grup'} <b>${displayName}</b> (${group.group_name || group.group_id})`;
+    }
+
+    const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox, .platform-icon.roblox');
+    avatarEls.forEach(el => {
+      if (data.avatarUrl) {
+        el.classList.add('roblox-avatar-img');
+        el.style.backgroundImage = `url(${data.avatarUrl})`;
+        el.textContent = '';
+      }
+    });
+  } catch (err) {
+    console.error('Gagal ambil profil creator group:', err);
+  }
+}
+
+function applyRobloxCardStatus() {
+  if (robloxConnectedState) return;
+  if (lastKnownGroups && lastKnownGroups.length) {
+    applyGroupFallbackConnection(lastKnownGroups[0]);
+  } else {
+    updateRobloxUI(false, '');
+  }
 }
 
 // CATATAN: status Roblox TIDAK dibaca dari localStorage di sini.
