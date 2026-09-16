@@ -1432,7 +1432,7 @@ body:before{
         <div class="plan-card-body">
           <div>
             <div class="stat-big">Free</div>
-            <div class="stat-sub" data-i18n="stat-plan-sub">Selamanya</div>
+            <div class="stat-sub" id="planSubText">Selamanya</div>
           </div>
           <div class="plan-crown">
             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M3 8l4.5 3L12 5l4.5 6L21 8l-2 10H5L3 8z"/></svg>
@@ -1901,10 +1901,11 @@ let robloxCardIsGroupFallback = false;
     }
   }
 
-   function applyPlanStatus(user) {
+     function applyPlanStatus(user) {
     const planBig = document.querySelector('.plan-card .stat-big');
     const planSub = document.querySelector('.plan-card .stat-sub');
     const isUnlimited = user.quota === -1;
+    window.dylPlanInfo = { plan: user.plan, expiresAt: user.plan_expires_at };
 
     if (planBig) planBig.textContent = user.plan === 'free' ? 'Free' : user.plan;
     if (planSub) {
@@ -2276,6 +2277,18 @@ let lastPreviewThumb = null;
         quotaPill.innerHTML = lang === 'EN'
           ? `<span id="quotaLeft">Unlimited conversions · ${window.dylUnlimitedPlan} plan active</span>`
           : `<span id="quotaLeft">Konversi tanpa batas · Paket ${window.dylUnlimitedPlan} aktif</span>`;
+      }
+    }
+        if (window.dylPlanInfo) {
+      const planSub = document.querySelector('.plan-card .stat-sub');
+      if (planSub) {
+        if (window.dylPlanInfo.plan !== 'free' && window.dylPlanInfo.expiresAt) {
+          const expireDate = new Date(window.dylPlanInfo.expiresAt);
+          const label = expireDate.toLocaleDateString(lang === 'EN' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+          planSub.textContent = (lang === 'EN' ? 'Active until ' : 'Aktif sampai ') + label;
+        } else {
+          planSub.textContent = lang === 'EN' ? 'Forever' : 'Selamanya';
+        }
       }
     }
     document.documentElement.lang = lang.toLowerCase();
