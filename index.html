@@ -1447,7 +1447,7 @@ body:before{
         <div class="panel-title" data-i18n="panel-convert-title">Convert Audio</div>
         <div class="panel-sub" data-i18n="panel-convert-sub">Upload file MP3 atau tempel link YouTube/SoundCloud</div>
  
-        <div class="quota-pill"><span><b id="quotaLeft">2</b> <span data-i18n="quota-text">/ 2 konversi tersisa · Paket gratis, reset tiap 24 jam</span></span></div>
+        <div class="quota-pill"><span><b id="quotaLeft">5</b> <span data-i18n="quota-text">/ 5 konversi tersisa · Paket gratis, reset tiap 12 jam</span></span></div>
  
         <label style="font-size:12.5px; color: var(--text-faint); display:block; margin-bottom:6px;" data-i18n="label-link">Link YouTube atau SoundCloud</label>
         <input class="url-input" type="text" placeholder="Tempel link di sini..." id="urlInput" oninput="handleUrlInput(this.value)" style="margin-bottom:0;" data-i18n-ph="ph-link">
@@ -2078,7 +2078,7 @@ let lastPreviewThumb = null;
       'btn-upgrade': 'Upgrade Paket',
       'panel-convert-title': 'Convert Audio',
       'panel-convert-sub': 'Upload file MP3 atau tempel link YouTube/SoundCloud',
-      'quota-text': '/ 2 konversi tersisa · Paket gratis, reset tiap 24 jam',
+      'quota-text': '/ 5 conversions left · Free plan, resets every 12 hours',
       'label-link': 'Link YouTube atau SoundCloud',
       'ph-link': 'Tempel link di sini...',
       'divider-or': 'ATAU',
@@ -3067,7 +3067,7 @@ function updateHistoryStorage(downloadUrl, patch) {
     }
   }
  
-  let quota = 2;
+  let quota = 5;
   async function startConvert() {
     const url = document.getElementById('urlInput').value.trim();
     const hasFile = fileChosen.classList.contains('show');
