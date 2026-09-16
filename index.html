@@ -3115,10 +3115,11 @@ function updateHistoryStorage(downloadUrl, patch) {
         formData.append('speed', speed);
         formData.append('amplifyDb', amplifyDb);
         formData.append('maxDuration', maxDuration);
-        res = await fetch(`${CONVERT_API_BASE}/convert`, { method: 'POST', body: formData });
+         res = await fetch(`${CONVERT_API_BASE}/convert`, { method: 'POST', credentials: 'include', body: formData });
       } else {
         res = await fetch(`${CONVERT_API_BASE}/convert`, {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url, speed, amplifyDb, maxDuration })
         });
