@@ -2346,7 +2346,12 @@ function toggleConnect(btn, platform) {
   dropzone.addEventListener('drop', e => {
     e.preventDefault();
     dropzone.classList.remove('drag');
-    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files.length) {
+      const dt = new DataTransfer();
+      dt.items.add(e.dataTransfer.files[0]);
+      fileInput.files = dt.files;
+      handleFile(e.dataTransfer.files[0]);
+    }
   });
   fileInput.addEventListener('change', e => {
     if (e.target.files.length) handleFile(e.target.files[0]);
