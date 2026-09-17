@@ -1289,7 +1289,17 @@ body:before{
   .landing-nav{flex-wrap:wrap;gap:12px;}
 }
 @media (max-width: 880px) {
-  .panels { grid-template-columns: 1fr !important; }
+  .panels {
+    grid-template-columns: 1fr !important;
+  }
+
+  .panels > .panel:nth-child(1) {
+    order: 2 !important;
+  }
+
+  .panels > .panel:nth-child(2) {
+    order: 1 !important;
+  }
 }
 @media (max-width: 880px) {
   .app { grid-template-columns: 1fr !important; }
@@ -1387,22 +1397,6 @@ body:before{
 
   .main {
     padding-top: 62px !important;
-  }
-}
-	/* ===== MOBILE PANEL ORDER ===== */
-@media (max-width: 880px) {
-  .panels {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-  }
-
-  .panels > .panel:nth-child(1) {
-    order: 2 !important;
-  }
-
-  .panels > .panel:nth-child(2) {
-    order: 1 !important;
   }
 }
 </style>
