@@ -1331,15 +1331,18 @@ body:before{
   box-sizing: border-box;
 }
 
-    .hamburger-btn {
+ .hamburger-btn {
     width: 36px !important;
     height: 36px !important;
     min-width: 36px !important;
     min-height: 36px !important;
-    background: transparent !important;
-    border-color: transparent !important;
     box-shadow: none !important;
-  }
+}
+
+.hamburger-btn svg {
+    width: 26px !important;
+    height: 26px !important;
+}
 
   .hamburger-btn:hover {
     background: transparent !important;
@@ -1355,17 +1358,12 @@ body:before{
     margin: 0 !important;
     z-index: 40;
 
-    background: linear-gradient(
-        to right,
-        transparent 0px,
-        transparent 70px,
-        var(--bg-base) 70px,
-        var(--bg-base) 100%
-    ) !important;
-
+    background: var(--bg-base) !important;
     border-bottom: none !important;
+
     display: flex !important;
     align-items: center !important;
+
     padding-left: 70px !important;
     box-sizing: border-box;
 }
