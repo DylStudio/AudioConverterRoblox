@@ -3409,14 +3409,12 @@ async function patchConversionServer(convId, patch) {
       enterApp(); // dipanggil duluan supaya dashboard tetap muncul walau ada error di bawah
 
       try {
-        renderLinkedGroups(data.groups);
+         renderLinkedGroups(data.groups);
       } catch (groupErr) {
         console.error('Gagal render linked groups:', groupErr);
       }
 
-      // pastikan status Roblox dari server yang menang (loadPersistedState jalan di enterApp)
-      updateRobloxUI(!!data.roblox, data.roblox ? data.roblox.roblox_user_id : '');
-      document.querySelectorAll('.h-account-dropdown').forEach(populateAccountSelect);
+       document.querySelectorAll('.h-account-dropdown').forEach(populateAccountSelect);
 
       if (window.location.search) {
         window.history.replaceState({}, document.title, window.location.pathname);
