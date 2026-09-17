@@ -1960,16 +1960,16 @@ document.getElementById('linkPreview').classList.remove('show');
 }
  
   // ===== Logout =====
-  async function doLogout() {
+ async function doLogout() {
   document.getElementById('profileMenu').classList.remove('show');
   try {
     await fetch(`${CONVERT_API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
   } catch (err) {
     console.error('Gagal logout di server:', err);
   }
+  clearRobloxCache();  
   document.getElementById('appRoot').classList.add('hidden');
   document.getElementById('landingPage').classList.remove('hidden');
-  document.getElementById('landingPage').style.visibility = 'visible';   // ← tambahkan baris ini
   window.scrollTo(0, 0);
 }
   // ===== Page tab switching =====
@@ -3432,24 +3432,33 @@ function updateRobloxUI(connected, label) {
   robloxConnectedState = connected;
   robloxLabelState = label;
   renderLinkedPersonal();
-  if (connected && label) {
-    fetchRobloxProfile(label);
-  } else {
-    resetRobloxAvatar();
-  }
+
   const name = document.getElementById('robloxAcctName');
   const badge = document.getElementById('robloxAcctBadge');
   const toggle = document.getElementById('robloxConnectToggle');
   const detail = document.getElementById('robloxConnectDetail');
-  if (connected) {
-    name.textContent = label;
+
+  if (connected && label) {
+    // Cek cache: kalau ID-nya sama persis dengan yang tersimpan, pakai nama/avatar cache dulu (instan, anti-kedip).
+    // Kalau beda ID (ganti akun) atau belum ada cache, tampilkan ID mentah dulu seperti biasa.
+    const cached = loadRobloxCache();
+    const useCache = cached && cached.label === label;
+    const displayNow = useCache ? cached.displayName : label;
+
+    name.textContent = displayNow;
+    if (useCache && cached.avatarUrl) applyRobloxAvatar(cached.avatarUrl);
+
     badge.textContent = currentLang === 'EN' ? 'Connected' : 'Terhubung';
     badge.style.background = 'rgba(79,209,197,0.14)';
     badge.style.color = 'var(--teal)';
     toggle.textContent = currentLang === 'EN' ? 'Connected' : 'Terhubung';
     toggle.classList.add('linked');
-    detail.innerHTML = `${currentLang === 'EN' ? 'Creator account' : 'Akun kreator'} <b>${label}</b>`;
+    detail.innerHTML = `${currentLang === 'EN' ? 'Creator account' : 'Akun kreator'} <b>${displayNow}</b>`;
+
+    fetchRobloxProfile(label); // tetap fetch asli ke server, akan menimpa tampilan & cache di atas
   } else {
+    resetRobloxAvatar();
+    clearRobloxCache();
     name.textContent = currentLang === 'EN' ? 'Not connected' : 'Belum terhubung';
     badge.textContent = currentLang === 'EN' ? 'Not connected' : 'Belum terhubung';
     badge.style.background = 'rgba(255,255,255,.08)';
@@ -3468,6 +3477,8 @@ async function fetchRobloxProfile(userId) {
     const data = await res.json();
     const displayName = data.displayName || data.username || userId;
 	robloxDisplayName = displayName;
+
+	saveRobloxCache(userId, displayName, data.avatarUrl || null);   // ← tambahkan baris ini
 
     const nameEl = document.getElementById('robloxAcctName');
     if (nameEl) nameEl.textContent = displayName;
@@ -3493,6 +3504,29 @@ document.querySelectorAll('.h-account-dropdown').forEach(populateAccountSelect);
 } catch (err) {
   console.error('Gagal ambil profil Roblox:', err);
 }
+}
+
+// ===== Cache Roblox (biar gak kedip pas refresh, server tetap yang menang) =====
+function saveRobloxCache(label, displayName, avatarUrl) {
+  try {
+    localStorage.setItem('dyl_roblox_cache', JSON.stringify({ label, displayName, avatarUrl }));
+  } catch (e) {}
+}
+function loadRobloxCache() {
+  try {
+    return JSON.parse(localStorage.getItem('dyl_roblox_cache') || 'null');
+  } catch (e) { return null; }
+}
+function clearRobloxCache() {
+  try { localStorage.removeItem('dyl_roblox_cache'); } catch (e) {}
+}
+function applyRobloxAvatar(avatarUrl) {
+  const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox, .platform-icon.roblox');
+  avatarEls.forEach(el => {
+    el.classList.add('roblox-avatar-img');
+    el.style.backgroundImage = `url(${avatarUrl})`;
+    el.textContent = '';
+  });
 }
 
 function resetRobloxAvatar() {
