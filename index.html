@@ -1224,6 +1224,10 @@ body:before{
 }
 /* ===== Landing / cover page ===== */
 .hidden{display:none !important;}
+#landingPage {
+  visibility: hidden;
+}
+.hidden{display:none !important;}
 .landing-page{
   min-height:100vh;background:var(--bg-base);color:var(--text-primary);
   font-family:'Inter',sans-serif;
@@ -3392,9 +3396,12 @@ async function patchConversionServer(convId, patch) {
 
   // ===== Cek sesi login ke backend (cookie session) =====
   async function checkSession() {
-    try {
-      const res = await fetch(`${CONVERT_API_BASE}/auth/me`, { credentials: 'include' });
-      if (!res.ok) return; // belum login, tetap di landing page
+  try {
+    const res = await fetch(`${CONVERT_API_BASE}/auth/me`, { credentials: 'include' });
+    if (!res.ok) {
+      document.getElementById('landingPage').style.visibility = 'visible';
+      return; // belum login, tetap di landing page
+    }
       const data = await res.json();
       applyDiscordLogin(data.user);
       applyPlanStatus(data.user);
@@ -3415,11 +3422,11 @@ async function patchConversionServer(convId, patch) {
       if (window.location.search) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
-    } catch (err) {
-      console.error('Gagal cek sesi login:', err);
-    }
+     } catch (err) {
+    console.error('Gagal cek sesi login:', err);
+    document.getElementById('landingPage').style.visibility = 'visible';
   }
-
+}
   // ===== Sinkronisasi UI Roblox connect =====
 function updateRobloxUI(connected, label) {
   robloxCardIsGroupFallback = false;
