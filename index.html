@@ -969,9 +969,22 @@ body:before{
 .h-link{color:#70dcd1}
 .h-ingame{border-color:rgba(255,255,255,.06)}
 .profile-menu{background:rgba(22,24,32,.96);backdrop-filter:blur(18px);border-color:rgba(255,255,255,.09)}
-@media (max-width:880px){
+@media (max-width: 880px) {
   .main{padding:22px 16px 50px}
   .hero{padding:24px 20px}
+
+  .panels{
+    display:flex !important;
+    flex-direction:column !important;
+  }
+
+  .panels > .panel:first-child{
+    order:2 !important;
+  }
+
+  .panels > .panel:last-child{
+    order:1 !important;
+  }
 }
 @media (max-width:560px){
   .hero h1{font-size:32px}
