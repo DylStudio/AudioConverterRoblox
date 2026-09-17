@@ -3571,31 +3571,37 @@ async function loadPersistedState() {
           speedTxt, ampTxt, durTxt, createdAtMs, c.asset_id, uploaded, modState, c.id);
       });
 
-      // Hitung ringkasan bulanan & harian langsung dari data server (bukan localStorage lagi)
-      const monthMap = {};
-      const dayMap = {};
-      const cutoffDayMs = Date.now() - 40 * 24 * 60 * 60 * 1000;
-      allRows.forEach(c => {
-        if (!c.created_at) return;
-        const ms = new Date(c.created_at.replace(' ', 'T') + 'Z').getTime();
-        const d = new Date(ms);
-        const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        monthMap[mKey] = (monthMap[mKey] || 0) + 1;
-        if (ms >= cutoffDayMs) {
-          const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          dayMap[dKey] = (dayMap[dKey] || 0) + 1;
-        }
-      });
-      const nowMonthKey = currentMonthKey();
-      if (!monthMap[nowMonthKey]) monthMap[nowMonthKey] = 0;
-      monthlyData.length = 0;
-      Object.keys(monthMap).forEach(k => monthlyData.push({ key: k, count: monthMap[k] }));
+      // Hitung ringkasan harian dari row yang masih ada (untuk label "X hari ini")
+     const dayMap = {};
+    const cutoffDayMs = Date.now() - 40 * 24 * 60 * 60 * 1000;
+    allRows.forEach(c => {
+      if (!c.created_at) return;
+      const ms = new Date(c.created_at.replace(' ', 'T') + 'Z').getTime();
+      if (ms >= cutoffDayMs) {
+       const d = new Date(ms);
+       const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+       dayMap[dKey] = (dayMap[dKey] || 0) + 1;
+     }
+   });
+   const nowDayKey = todayKey();
+   if (!dayMap[nowDayKey]) dayMap[nowDayKey] = 0;
+   dailyData.length = 0;
+   Object.keys(dayMap).forEach(k => dailyData.push({ key: k, count: dayMap[k] }));
 
-      const nowDayKey = todayKey();
-      if (!dayMap[nowDayKey]) dayMap[nowDayKey] = 0;
-      dailyData.length = 0;
-      Object.keys(dayMap).forEach(k => dailyData.push({ key: k, count: dayMap[k] }));
+  // Ambil ringkasan bulanan dari counter permanen di server (tidak berkurang saat hapus riwayat)
+  try {
+    const statsRes = await fetch(`${CONVERT_API_BASE}/conversions/stats`, { credentials: 'include' });
+    if (statsRes.ok) {
+      const statsData = await statsRes.json();
+      monthlyData.length = 0;
+      (statsData.stats || []).forEach(s => monthlyData.push({ key: s.month_key, count: s.count }));
+      const nowMonthKey = currentMonthKey();
+      if (!monthlyData.find(m => m.key === nowMonthKey)) monthlyData.push({ key: nowMonthKey, count: 0 });
     }
+  } catch (err) {
+    console.error('Gagal ambil statistik bulanan:', err);
+  }
+}
   } catch (err) {
     console.error('Gagal memuat riwayat dari server:', err);
   }
