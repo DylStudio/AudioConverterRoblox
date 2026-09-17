@@ -1332,7 +1332,9 @@ body:before{
 
   .hamburger-btn {
     flex-shrink: 0 !important;
-  }
+    background: transparent !important;
+    border-color: transparent !important;
+}
 
   .topbar {
     position: fixed !important;
@@ -1345,7 +1347,7 @@ body:before{
     z-index: 40;
 
     /* transparan supaya tidak menutup navigasi */
-    background: transparent !important;
+    background: var(--bg-base) !important;
     border-bottom: none !important;
 
     display: flex !important;
