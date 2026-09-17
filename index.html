@@ -1317,7 +1317,7 @@ body:before{
   .nav-label { opacity: 1 !important; max-width: none !important; font-size: 13px; }
   .main { margin-left: 0 !important; width: 100% !important; }
 }
-	@media (max-width: 880px) {
+@media (max-width: 880px) {
   .sidebar {
     position: fixed !important;
     top: 0 !important;
@@ -1331,10 +1331,14 @@ body:before{
   }
 
   .hamburger-btn {
-    flex-shrink: 0 !important;
     background: transparent !important;
     border-color: transparent !important;
-}
+    box-shadow: none !important;
+  }
+
+  .hamburger-btn:hover {
+    background: transparent !important;
+  }
 
   .topbar {
     position: fixed !important;
