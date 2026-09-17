@@ -1316,6 +1316,26 @@ body:before{
   .nav-label { opacity: 1 !important; max-width: none !important; font-size: 13px; }
   .main { margin-left: 0 !important; width: 100% !important; }
 }
+	@media (max-width: 880px) {
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    width: auto !important;
+    z-index: 41;
+  }
+  .topbar {
+    position: fixed !important;
+    top: 0 !important; left: 70px !important; right: 0 !important;
+    z-index: 39;
+    background: var(--bg-base);
+    padding: 8px 16px !important;
+    margin: 0 !important;
+    height: 52px;
+    display: flex !important;
+    align-items: center !important;
+  }
+  .main { padding-top: 62px !important; }
+}
 </style>
 </head>
 <body>
