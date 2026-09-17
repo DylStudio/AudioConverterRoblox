@@ -1318,7 +1318,7 @@ body:before{
   .main { margin-left: 0 !important; width: 100% !important; }
 }
 @media (max-width: 880px) {
-  .sidebar {
+ .sidebar {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -1329,6 +1329,10 @@ body:before{
   background: transparent !important;
   backdrop-filter: none !important;
   box-sizing: border-box;
+  pointer-events: none !important;
+}
+.hamburger-btn {
+  pointer-events: auto !important;
 }
 
 .hamburger-btn {
