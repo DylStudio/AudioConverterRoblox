@@ -1961,17 +1961,17 @@ document.getElementById('linkPreview').classList.remove('show');
  
   // ===== Logout =====
   async function doLogout() {
-    document.getElementById('profileMenu').classList.remove('show');
-    try {
-      await fetch(`${CONVERT_API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
-    } catch (err) {
-      console.error('Gagal logout di server:', err);
-    }
-    document.getElementById('appRoot').classList.add('hidden');
-    document.getElementById('landingPage').classList.remove('hidden');
-    window.scrollTo(0, 0);
+  document.getElementById('profileMenu').classList.remove('show');
+  try {
+    await fetch(`${CONVERT_API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+  } catch (err) {
+    console.error('Gagal logout di server:', err);
   }
- 
+  document.getElementById('appRoot').classList.add('hidden');
+  document.getElementById('landingPage').classList.remove('hidden');
+  document.getElementById('landingPage').style.visibility = 'visible';   // ← tambahkan baris ini
+  window.scrollTo(0, 0);
+}
   // ===== Page tab switching =====
   function switchPage(page, btn) {
     document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
