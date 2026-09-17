@@ -3563,9 +3563,9 @@ async function loadPersistedState() {
       rows.forEach(c => {
         const uploaded = !!c.asset_id;
         const createdAtMs = c.created_at ? new Date(c.created_at.replace(' ', 'T') + 'Z').getTime() : Date.now();
-        const speedTxt = c.speed != null ? c.speed : document.getElementById('speedVal').textContent;
-        const ampTxt = c.amplify_db != null ? c.amplify_db : document.getElementById('ampVal').textContent;
-        const durTxt = c.max_duration != null ? c.max_duration : document.getElementById('durVal').textContent;
+        const speedTxt = c.speed != null ? c.speed + 'x' : document.getElementById('speedVal').textContent;
+        const ampTxt = c.amplify_db != null ? (c.amplify_db > 0 ? '+' : '') + c.amplify_db + 'dB' : document.getElementById('ampVal').textContent;
+        const durTxt = c.max_duration != null ? c.max_duration + 's' : document.getElementById('durVal').textContent;
         const modState = (c.moderation_status && c.moderation_status !== 'none') ? c.moderation_status : null;
         addHistoryEntry(c.source_label, c.title, c.link, false, c.thumb, c.result_duration, c.download_url,
           speedTxt, ampTxt, durTxt, createdAtMs, c.asset_id, uploaded, modState, c.id);
