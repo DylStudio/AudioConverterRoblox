@@ -1967,9 +1967,10 @@ document.getElementById('linkPreview').classList.remove('show');
   } catch (err) {
     console.error('Gagal logout di server:', err);
   }
-  clearRobloxCache();  
+  clearRobloxCache(); 
   document.getElementById('appRoot').classList.add('hidden');
   document.getElementById('landingPage').classList.remove('hidden');
+  document.getElementById('landingPage').style.visibility = 'visible';  
   window.scrollTo(0, 0);
 }
   // ===== Page tab switching =====
