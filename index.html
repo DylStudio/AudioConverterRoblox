@@ -1293,17 +1293,18 @@ body:before{
   border-bottom: 1px solid var(--border);
   z-index: 40;
 }
-  #sidebarNav {
-    display: none;
-    position: absolute;
-    top: 60px; left: 16px; right: 16px;
-    flex-direction: column !important;
-    background: var(--bg-panel-raised);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px;
-    z-index: 50;
-  }
+ #sidebarNav {
+  display: none;
+  position: fixed;
+  top: 60px; left: 16px; right: 16px;
+  width: auto !important;
+  flex-direction: column !important;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  z-index: 50;
+}
   #sidebarNav.open { display: flex !important; }
   .hamburger-btn { display: flex !important; }
   .nav-btn {
