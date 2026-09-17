@@ -1389,6 +1389,22 @@ body:before{
     padding-top: 62px !important;
   }
 }
+	/* ===== MOBILE PANEL ORDER ===== */
+@media (max-width: 880px) {
+  .panels {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .panels > .panel:nth-child(1) {
+    order: 2 !important;
+  }
+
+  .panels > .panel:nth-child(2) {
+    order: 1 !important;
+  }
+}
 </style>
 </head>
 <body>
