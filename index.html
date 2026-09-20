@@ -1621,16 +1621,18 @@ body:before{
             <div class="preset-row">
               <div class="preset-label">Presets</div>
               <div class="preset-chips" id="presetChips">
-                <span class="preset-chip" data-speed="2.1" data-amp="-6" onclick="applyPreset(this,2.1)">Slow <b>2.1x</b></span>
-                <span class="preset-chip default active" data-speed="2.3" data-amp="-8" onclick="applyPreset(this,2.3)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px;"><path d="M13 3L4 14h6l-1 7 9-11h-6l1-7z"/></svg>Default <b>2.3x</b></span>
-                <span class="preset-chip" data-speed="2.5" data-amp="-10" onclick="applyPreset(this,2.5)">Fast <b>2.5x</b></span>
-                <span class="preset-chip" data-speed="2.7" data-amp="-12" onclick="applyPreset(this,2.7)">Faster <b>2.7x</b></span>
-                <span class="preset-chip" data-speed="2.9" data-amp="-14" onclick="applyPreset(this,2.9)">Ultra <b>2.9x</b></span>
+               <span class="preset-chip" data-speed="0.8" data-amp="0" onclick="applyPreset(this,0.8)">0.8x <b>0.8x</b></span>
+				<span class="preset-chip" data-speed="1" data-amp="0" onclick="applyPreset(this,1)">1x <b>1.0x</b></span>
+				<span class="preset-chip" data-speed="1.3" data-amp="0" onclick="applyPreset(this,1.3)">1.3x <b>1.3x</b></span>
+				<span class="preset-chip default active" data-speed="1.5" data-amp="0" onclick="applyPreset(this,1.5)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px;"><path d="M13 3L4 14h6l-1 7 9-11h-6l1-7z"/></svg>Default <b>1.5x</b></span>
+				<span class="preset-chip" data-speed="1.7" data-amp="0" onclick="applyPreset(this,1.7)">1.7x <b>1.7x</b></span>
+				<span class="preset-chip" data-speed="1.8" data-amp="0" onclick="applyPreset(this,1.8)">1.8x <b>1.8x</b></span>
+				<span class="preset-chip" data-speed="1.9" data-amp="0" onclick="applyPreset(this,1.9)">1.9x <b>1.9x</b></span>
               </div>
             </div>
             <div class="slider-row">
-              <div class="sr-top"><span data-i18n="label-speed">Kecepatan Putar</span><b id="speedVal">2.3x</b></div>
-              <input type="range" min="0.5" max="3" step="0.1" value="2.3" id="speedSlider" oninput="updateAdv(this,'speed')">
+              <div class="sr-top"><span data-i18n="label-speed">Kecepatan Putar</span><b id="speedVal">1.5x</b></div>
+ 			<input type="range" min="0.5" max="3" step="0.1" value="1.5" id="speedSlider" oninput="updateAdv(this,'speed')">
             </div>
             <div class="slider-row">
               <div class="sr-top"><span data-i18n="label-amplify">Amplify (Volume)</span><b id="ampVal">0dB</b></div>
@@ -3149,7 +3151,7 @@ async function patchConversionServer(convId, patch) {
         <span><span data-i18n="lbl-maxdur">Maks Durasi:</span> <b class="h-value">${dur}</b></span>
         <span><span data-i18n="lbl-resultdur">Durasi Hasil:</span> <b class="h-value">${resultDurLabel}</b></span>
       </div>
-      <div class="h-ingame"><span data-i18n="lbl-ingame">⏱️ Kecepatan normal (in-game):</span> <b>${(1 / parseFloat(speed)).toFixed(2)}</b></div>
+     <div class="h-ingame"><span data-i18n="lbl-ingame">⏱️ Kecepatan normal (in-game):</span> <b>${parseFloat(speed) === 1 ? '1' : ((1 / parseFloat(speed)) + 0.01).toFixed(2)}</b></div>
             <div class="h-asset" style="display:${savedUploaded ? 'block' : 'none'};">
         <div class="h-asset-top">
           <span class="h-badge completed" style="text-transform:none;" data-i18n="h-accepted">Diterima</span>
