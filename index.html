@@ -1130,6 +1130,7 @@ body:before{
   color:var(--text-muted);cursor:pointer;transition:all .15s;
 }
 .preset-chip b{font-weight:700;}
+.preset-chip.default{min-width:82px;justify-content:center;white-space:nowrap;}
 .preset-chip:hover{border-color:rgba(255,255,255,.18);color:var(--text-primary);}
 .preset-chip.active{
   background:linear-gradient(135deg,rgba(98,228,213,.22),rgba(98,228,213,.1));
@@ -1623,7 +1624,7 @@ body:before{
               <div class="preset-chips" id="presetChips">
                <span class="preset-chip" data-speed="0.8" data-amp="0" onclick="applyPreset(this,0.8)">0.8x</span>
 <span class="preset-chip" data-speed="1.3" data-amp="0" onclick="applyPreset(this,1.3)">1.3x</span>
-				<span class="preset-chip default active" data-speed="1" data-amp="0" onclick="applyPreset(this,1)>
+				<span class="preset-chip default active" data-speed="1" data-amp="0" onclick="applyPreset(this,1)">
  				 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px;">
     			<path d="M13 3L4 14h6l-1 7 9-11h-6l1-7 9-11h-6l1-7z"/>
   				</svg>
@@ -2678,9 +2679,23 @@ function toggleConnect(btn, platform) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ robloxUserId: id, apiKey })
       });
-      
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) throw new Error(data.error || 'Gagal menyimpan');
-      updateRobloxUI(true, id);
+
+      const meRes = await fetch(`${CONVERT_API_BASE}/auth/me`, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      if (meRes.ok) {
+        const me = await meRes.json();
+        syncRobloxFromSession(me);
+        renderLinkedGroups(Array.isArray(me.groups) ? me.groups : []);
+        document.querySelectorAll('.h-account-dropdown').forEach(populateAccountSelect);
+      } else {
+        updateRobloxUI(true, id);
+      }
+
       document.getElementById('apiKeyInput').value = '';
       alert(currentLang === 'EN' ? 'Roblox account connected.' : 'Akun Roblox berhasil terhubung.');
     } catch (err) {
@@ -2946,6 +2961,7 @@ async function patchConversionServer(convId, patch) {
     if (!wrapEl) return;
     const menu = wrapEl.querySelector('.h-account-menu');
     const label = wrapEl.querySelector('.h-account-trigger-label');
+    const previousValue = wrapEl.dataset.value || '';
     let optionsHtml = '';
     let hasAccounts = false;
 
@@ -2967,8 +2983,19 @@ async function patchConversionServer(convId, patch) {
       ? optionsHtml
       : `<div class="h-account-option disabled">${currentLang === 'EN' ? 'No account connected' : 'Belum ada akun'}</div>`;
 
-    wrapEl.dataset.value = '';
-    if (label) label.textContent = currentLang === 'EN' ? 'Select account' : 'Pilih akun';
+    const restored = previousValue
+      ? Array.from(menu.querySelectorAll('.h-account-option')).find(o => o.dataset.value === previousValue)
+      : null;
+
+    if (restored) {
+      wrapEl.dataset.value = previousValue;
+      if (label) label.textContent = restored.dataset.label || restored.textContent;
+      menu.querySelectorAll('.h-account-option').forEach(o => o.classList.remove('selected'));
+      restored.classList.add('selected');
+    } else {
+      wrapEl.dataset.value = '';
+      if (label) label.textContent = currentLang === 'EN' ? 'Select account' : 'Pilih akun';
+    }
   }
 
   function toggleAccountDropdown(btn) {
@@ -3672,6 +3699,28 @@ async function patchConversionServer(convId, patch) {
 
 
   // ===== Sinkronisasi status Roblox dari /auth/me =====
+  let robloxSyncInFlight = false;
+  async function refreshRobloxFromServer() {
+    if (robloxSyncInFlight) return;
+    robloxSyncInFlight = true;
+    try {
+      const res = await fetch(`${CONVERT_API_BASE}/auth/me`, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      syncRobloxFromSession(data);
+      renderLinkedGroups(Array.isArray(data.groups) ? data.groups : []);
+      document.querySelectorAll('.h-account-dropdown').forEach(populateAccountSelect);
+    } catch (err) {
+      console.error('Gagal sinkronisasi akun Roblox:', err);
+    } finally {
+      robloxSyncInFlight = false;
+    }
+  }
+
+
   function resolveRobloxUserId(data) {
     const roblox = data?.roblox;
 
@@ -3726,8 +3775,9 @@ async function patchConversionServer(convId, patch) {
       applyDiscordLogin(data.user);
       applyPlanStatus(data.user);
 
+      // Ambil status Roblox dari server sebelum dashboard dirender.
+      syncRobloxFromSession(data);
       enterApp();
-      syncRobloxFromSession(data); // dipanggil duluan supaya dashboard tetap muncul walau ada error di bawah
 
       try {
          renderLinkedGroups(data.groups);
@@ -4129,6 +4179,7 @@ renderMonthlyHistory();
 updateTotalConvSub();
 
   checkSession();
+  window.addEventListener('focus', refreshRobloxFromServer);
 </script>
  
 </body>
