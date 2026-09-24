@@ -3731,7 +3731,9 @@ async function patchConversionServer(convId, patch) {
     if (roblox && typeof roblox === 'object') {
       return String(
         roblox.roblox_user_id ||
+        roblox.robloxUserId ||
         roblox.user_id ||
+        roblox.userId ||
         roblox.id ||
         ''
       ).trim();
@@ -3740,6 +3742,12 @@ async function patchConversionServer(convId, patch) {
     return String(
       data?.roblox_user_id ||
       data?.robloxUserId ||
+      data?.robloxAccount?.roblox_user_id ||
+      data?.robloxAccount?.user_id ||
+      data?.robloxAccount?.id ||
+      data?.roblox_account?.roblox_user_id ||
+      data?.user?.roblox_user_id ||
+      data?.user?.robloxUserId ||
       ''
     ).trim();
   }
