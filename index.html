@@ -3336,13 +3336,13 @@ async function patchConversionServer(convId, patch) {
         formData.append('amplifyDb', amplifyDb);
         formData.append('maxDuration', maxDuration);
 
-        res = await fetch(`${CONVERT_API_BASE}/convert`, {
+        res = await fetch(\`\${CONVERT_API_BASE}/convert\`, {
           method: 'POST',
           credentials: 'include',
           body: formData
         });
       } else {
-        res = await fetch(`${CONVERT_API_BASE}/convert`, {
+        res = await fetch(\`\${CONVERT_API_BASE}/convert\`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -3370,7 +3370,7 @@ async function patchConversionServer(convId, patch) {
 
           try {
             const statusRes = await fetch(
-              `${CONVERT_API_BASE}/convert/status/${encodeURIComponent(jobId)}`,
+              \`\${CONVERT_API_BASE}/convert/status/\${encodeURIComponent(jobId)}\`,
               { credentials: 'include' }
             );
 
