@@ -1633,6 +1633,7 @@ body:before{
 				<span class="preset-chip" data-speed="1.7" data-amp="0" onclick="applyPreset(this,1.7)">1.7x</span>
 				<span class="preset-chip" data-speed="1.8" data-amp="0" onclick="applyPreset(this,1.8)">1.8x</span>
 				<span class="preset-chip" data-speed="1.9" data-amp="0" onclick="applyPreset(this,1.9)">1.9x</span>
+				<span class="preset-chip" data-speed="2.9" data-amp="0" onclick="applyPreset(this,2.9)">2.9x</span>
               </div>
             </div>
             <div class="slider-row">
@@ -3116,13 +3117,22 @@ async function patchConversionServer(convId, patch) {
     }
   }
  
-   function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null, createdAt = null, savedAssetId = null, savedUploaded = false, savedModState = null, convId = null) {
+   function addHistoryEntry(sourceLabel, title, linkText, save = true, thumb = null, existingDurLabel = null, downloadUrl = null, savedSpeed = null, savedAmp = null, savedDur = null, createdAt = null, savedAssetId = null, savedUploaded = false, savedModState = null, convId = null, jobStatus = 'completed', jobProgress = 100, jobId = null) {
     createdAt = createdAt || Date.now();
     const list = document.getElementById('historyList');
     const card = document.createElement('div');
     card.className = 'history-card new-entry';
   card.dataset.created = createdAt;
-    card.dataset.id = convId || '';
+    card.dataset.id = convId || jobId || '';
+    card.dataset.jobId = jobId || '';
+    card.dataset.jobStatus = jobStatus || 'completed';
+    card.dataset.jobProgress = String(jobProgress ?? 100);
+    const isJobPending = jobStatus === 'queued' || jobStatus === 'processing';
+    const jobStatusText = isJobPending
+      ? (currentLang === 'EN' ? 'Processing...' : 'Memproses...')
+      : (jobStatus === 'failed'
+          ? (currentLang === 'EN' ? 'Failed' : 'Gagal')
+          : 'Completed');
     const speed = savedSpeed || document.getElementById('speedVal').textContent;
     const amp = savedAmp || document.getElementById('ampVal').textContent;
     const dur = savedDur || document.getElementById('durVal').textContent;
@@ -3142,7 +3152,7 @@ async function patchConversionServer(convId, patch) {
         <div class="h-thumb ${thumbClass}" style="background: linear-gradient(135deg, #3A3448, #221E29); display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden;">${thumbInner}</div>
         <div style="flex:1; min-width:0;">
           <div class="h-badges">
-            <span class="h-badge completed">Completed</span>
+            <span class="h-badge ${isJobPending ? 'source' : (jobStatus === 'failed' ? 'expired' : 'completed')} h-job-status">${jobStatusText}</span>
             <span class="h-badge uploaded" style="display:${savedUploaded ? 'inline-block' : 'none'};">Uploaded</span>
             <span class="h-badge source">${sourceLabel}</span>
           </div>
@@ -3154,7 +3164,19 @@ async function patchConversionServer(convId, patch) {
         <span><span data-i18n="lbl-speed">Speed:</span> <b class="h-value">${speed}</b></span>
         <span><span data-i18n="lbl-amplify">Amplify:</span> <b class="h-value">${amp}</b></span>
         <span><span data-i18n="lbl-maxdur">Maks Durasi:</span> <b class="h-value">${dur}</b></span>
-        <span><span data-i18n="lbl-resultdur">Durasi Hasil:</span> <b class="h-value">${resultDurLabel}</b></span>
+        <span><span data-i18n="lbl-resultdur">Durasi Hasil:</span> <b class="h-value h-result-duration">${isJobPending ? '—' : resultDurLabel}</b></span>
+      </div>
+      <div class="h-job-progress" style="display:${isJobPending ? 'block' : 'none'}; margin:10px 0 4px;">
+        <div style="height:6px; background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden;">
+          <div class="h-job-progress-fill" style="height:100%; width:${Math.max(0, Math.min(100, Number(jobProgress) || 0))}%; background:var(--accent); border-radius:999px; transition:width .25s ease;"></div>
+        </div>
+        <div class="h-job-progress-label" style="margin-top:6px; font-size:11.5px; color:var(--text-faint);">
+          ${isJobPending
+            ? (jobStatus === 'queued'
+                ? (currentLang === 'EN' ? 'Waiting in queue...' : 'Menunggu antrean...')
+                : (currentLang === 'EN' ? 'Processing...' : 'Memproses...'))
+            : ''}
+        </div>
       </div>
      <div class="h-ingame"><span data-i18n="lbl-ingame">⏱️ Kecepatan normal (in-game):</span> <b>${parseFloat(speed) === 1 ? '1' : ((1 / parseFloat(speed)) + 0.01).toFixed(2)}</b></div>
             <div class="h-asset" style="display:${savedUploaded ? 'block' : 'none'};">
@@ -3174,11 +3196,11 @@ async function patchConversionServer(convId, patch) {
         </div>
       </div>
      <div class="h-actions">
-        <button class="h-download-btn" onclick="downloadHistoryAudio(this)" data-download-url="${downloadUrl || ''}">
+        <button class="h-download-btn" onclick="downloadHistoryAudio(this)" data-download-url="${downloadUrl || ''}" ${isJobPending || !downloadUrl ? 'disabled' : ''}>
           <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"/></svg>
           Download OGG
         </button>
-        <div class="h-upload-row" style="display:${savedUploaded ? 'none' : 'flex'}; gap:10px; flex-wrap:nowrap; align-items:center; min-width:0;">
+        <div class="h-upload-row" style="display:${savedUploaded || isJobPending ? 'none' : 'flex'}; gap:10px; flex-wrap:nowrap; align-items:center; min-width:0;">
         <div class="h-account-dropdown">
             <button type="button" class="h-account-trigger" onclick="toggleAccountDropdown(this)">
               <span class="h-account-trigger-label">Pilih akun</span>
@@ -3220,6 +3242,7 @@ async function patchConversionServer(convId, patch) {
         body: JSON.stringify({ id: convId, sourceLabel, title, link: linkText, thumb, downloadUrl, speed, amplifyDb: amp, maxDuration: dur, resultDuration: resultDurLabel })
       }).catch(err => console.error('Gagal simpan riwayat ke server:', err));
     }
+    return card;
   }
  
     let quota = 5;
@@ -3279,11 +3302,194 @@ async function patchConversionServer(convId, patch) {
     }, 1000);
   }
 
+
+  function updateConversionJobCard(card, statusData, meta) {
+    if (!card || !statusData) return;
+
+    const status = statusData.status || 'processing';
+    const progress = Math.max(0, Math.min(100, Number(statusData.progress) || 0));
+
+    card.dataset.jobStatus = status;
+    card.dataset.jobProgress = String(progress);
+
+    const badge = card.querySelector('.h-job-status');
+    const progressWrap = card.querySelector('.h-job-progress');
+    const progressFill = card.querySelector('.h-job-progress-fill');
+    const progressLabel = card.querySelector('.h-job-progress-label');
+    const resultDuration = card.querySelector('.h-result-duration');
+    const downloadBtn = card.querySelector('.h-download-btn');
+    const uploadRow = card.querySelector('.h-upload-row');
+
+    const pending = status === 'queued' || status === 'processing';
+
+    if (badge) {
+      badge.classList.remove('source', 'completed', 'expired');
+
+      if (pending) {
+        badge.classList.add('source');
+        badge.textContent = currentLang === 'EN' ? 'Processing...' : 'Memproses...';
+      } else if (status === 'completed') {
+        badge.classList.add('completed');
+        badge.textContent = 'Completed';
+      } else {
+        badge.classList.add('expired');
+        badge.textContent = currentLang === 'EN' ? 'Failed' : 'Gagal';
+      }
+    }
+
+    if (progressWrap) progressWrap.style.display = pending ? 'block' : 'none';
+    if (progressFill) progressFill.style.width = progress + '%';
+
+    if (progressLabel) {
+      if (status === 'queued') {
+        progressLabel.textContent = currentLang === 'EN'
+          ? 'Waiting in queue...'
+          : 'Menunggu antrean...';
+      } else if (status === 'processing') {
+        if (progress < 35) {
+          progressLabel.textContent = currentLang === 'EN'
+            ? 'Downloading audio...'
+            : 'Mengunduh audio...';
+        } else if (progress < 85) {
+          progressLabel.textContent = currentLang === 'EN'
+            ? 'Converting to OGG...'
+            : 'Mengonversi ke OGG...';
+        } else {
+          progressLabel.textContent = currentLang === 'EN'
+            ? 'Preparing result...'
+            : 'Menyiapkan hasil...';
+        }
+      } else if (status === 'failed') {
+        progressLabel.textContent =
+          (currentLang === 'EN' ? 'Failed: ' : 'Gagal: ') +
+          (statusData.error || 'Convert gagal');
+      }
+    }
+
+    if (resultDuration && statusData.durationSec) {
+      resultDuration.textContent = formatDuration(Math.round(statusData.durationSec));
+    }
+
+    if (status === 'completed') {
+      const fullDownloadUrl = CONVERT_API_BASE + (statusData.downloadUrl || '');
+
+      if (downloadBtn) {
+        downloadBtn.disabled = false;
+        downloadBtn.dataset.downloadUrl = fullDownloadUrl;
+      }
+
+      if (uploadRow) {
+        uploadRow.style.display = meta && meta.savedUploaded ? 'none' : 'flex';
+      }
+    } else {
+      if (downloadBtn) downloadBtn.disabled = true;
+      if (uploadRow) uploadRow.style.display = 'none';
+    }
+  }
+
+  async function saveCompletedJobHistory(meta, result) {
+    if (!meta || !result || !result.downloadUrl) return;
+
+    try {
+      await fetch(CONVERT_API_BASE + '/conversions', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: meta.jobId,
+          sourceLabel: meta.sourceLabel,
+          title: meta.title,
+          link: meta.linkText,
+          thumb: meta.thumb,
+          downloadUrl: CONVERT_API_BASE + result.downloadUrl,
+          speed: meta.speed,
+          amplifyDb: meta.ampText,
+          maxDuration: meta.durText,
+          resultDuration: result.durationSec
+            ? formatDuration(Math.round(result.durationSec))
+            : null
+        })
+      });
+    } catch (err) {
+      console.error('Gagal simpan riwayat job:', err);
+    }
+  }
+
+  async function pollConversionJob(card, jobId, meta) {
+    let networkFailures = 0;
+
+    for (let attempt = 0; attempt < 900; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      try {
+        const res = await fetch(
+          CONVERT_API_BASE + '/convert/status/' + encodeURIComponent(jobId),
+          { credentials: 'include' }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Gagal membaca status convert');
+        }
+
+        networkFailures = 0;
+        updateConversionJobCard(card, data, meta);
+
+        if (data.status === 'completed') {
+          await saveCompletedJobHistory(meta, data);
+          refreshUserPlanStatus();
+          bumpCurrentMonthCount();
+          return;
+        }
+
+        if (data.status === 'failed') {
+          refreshUserPlanStatus();
+          return;
+        }
+
+      } catch (err) {
+        networkFailures++;
+
+        const label = card.querySelector('.h-job-progress-label');
+
+        if (label) {
+          label.textContent = currentLang === 'EN'
+            ? 'Reconnecting...'
+            : 'Menghubungkan kembali...';
+        }
+
+        if (networkFailures >= 10) {
+          updateConversionJobCard(card, {
+            status: 'failed',
+            progress: 0,
+            error: currentLang === 'EN'
+              ? 'Connection to the conversion server was lost.'
+              : 'Koneksi ke server convert terputus.'
+          }, meta);
+          return;
+        }
+      }
+    }
+
+    updateConversionJobCard(card, {
+      status: 'failed',
+      progress: 0,
+      error: currentLang === 'EN'
+        ? 'Conversion took too long. Please try again.'
+        : 'Proses convert terlalu lama. Silakan coba lagi.'
+    }, meta);
+  }
+
+
   async function startConvert() {
     const url = document.getElementById('urlInput').value.trim();
     const hasFile = fileChosen.classList.contains('show');
+
     if (!url && !hasFile) {
-      alert(currentLang === 'EN' ? 'Please enter a link or upload an MP3 file first.' : 'Masukkan link atau upload file MP3 terlebih dahulu.');
+      alert(currentLang === 'EN'
+        ? 'Please enter a link or upload an MP3 file first.'
+        : 'Masukkan link atau upload file MP3 terlebih dahulu.');
       return;
     }
 
@@ -3291,40 +3497,34 @@ async function patchConversionServer(convId, patch) {
     const progressWrap = document.getElementById('progressWrap');
     const progressFill = document.getElementById('progressFill');
     const progressLabel = document.getElementById('progressLabel');
-    const resultCard = document.getElementById('resultCard');
-
-    resultCard.classList.remove('show');
-    btn.disabled = true;
-    progressWrap.classList.add('show');
-    progressFill.style.width = '10%';
 
     const speed = document.getElementById('speedSlider').value;
     const amplifyDb = document.getElementById('ampSlider').value;
     const durInput = document.querySelector('.slider-row input[type="range"][min="30"]');
     const maxDuration = durInput ? durInput.value : 300;
 
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    btn.disabled = true;
+    progressWrap.classList.add('show');
+    progressFill.style.width = '10%';
+    progressLabel.textContent = currentLang === 'EN'
+      ? 'Starting conversion...'
+      : 'Memulai convert...';
 
-    function updateJobProgress(status, progress) {
-      const p = Math.max(0, Math.min(100, Number(progress) || 0));
-      let label = currentLang === 'EN' ? 'Processing audio...' : 'Memproses audio...';
+    const sourceLabel = hasFile
+      ? 'MP3 Upload'
+      : (url.includes('soundcloud') ? 'SoundCloud' : 'YouTube');
 
-      if (status === 'queued') {
-        label = currentLang === 'EN' ? 'Waiting in queue...' : 'Menunggu antrean...';
-        progressFill.style.width = Math.max(10, p) + '%';
-      } else if (status === 'processing') {
-        if (p < 35) {
-          label = currentLang === 'EN' ? 'Downloading audio...' : 'Mengunduh audio...';
-        } else if (p < 85) {
-          label = currentLang === 'EN' ? 'Converting to OGG...' : 'Mengonversi ke OGG...';
-        } else {
-          label = currentLang === 'EN' ? 'Preparing result...' : 'Menyiapkan hasil...';
-        }
-        progressFill.style.width = Math.max(10, Math.min(95, p)) + '%';
-      }
+    const title = hasFile
+      ? fileName.textContent.replace('🎵 ', '')
+      : (document.getElementById('lpTitle')
+          ? document.getElementById('lpTitle').textContent
+          : 'Audio dari link');
 
-      progressLabel.textContent = label;
-    }
+    const linkText = hasFile
+      ? fileName.textContent.replace('🎵 ', '')
+      : url;
+
+    const thumb = hasFile ? null : lastPreviewThumb;
 
     try {
       let res;
@@ -3336,13 +3536,13 @@ async function patchConversionServer(convId, patch) {
         formData.append('amplifyDb', amplifyDb);
         formData.append('maxDuration', maxDuration);
 
-        res = await fetch(`${CONVERT_API_BASE}/convert`, {
+        res = await fetch(CONVERT_API_BASE + '/convert', {
           method: 'POST',
           credentials: 'include',
           body: formData
         });
       } else {
-        res = await fetch(`${CONVERT_API_BASE}/convert`, {
+        res = await fetch(CONVERT_API_BASE + '/convert', {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -3356,135 +3556,64 @@ async function patchConversionServer(convId, patch) {
         throw new Error(data.error || 'Convert gagal');
       }
 
-      let result = data;
-
-      if (data.jobId) {
-        const jobId = data.jobId;
-        let networkFailures = 0;
-        let completed = false;
-
-        updateJobProgress(data.status || 'queued', data.progress || 0);
-
-        for (let attempt = 0; attempt < 300; attempt++) {
-          await sleep(2000);
-
-          try {
-            const statusRes = await fetch(
-              `${CONVERT_API_BASE}/convert/status/${encodeURIComponent(jobId)}`,
-              { credentials: 'include' }
-            );
-
-            const statusData = await statusRes.json();
-
-            if (!statusRes.ok || !statusData.success) {
-              throw new Error(statusData.error || 'Gagal membaca status convert');
-            }
-
-            networkFailures = 0;
-            updateJobProgress(statusData.status, statusData.progress);
-
-            if (statusData.status === 'completed') {
-              result = statusData;
-              completed = true;
-              break;
-            }
-
-            if (statusData.status === 'failed') {
-              throw new Error(statusData.error || 'Convert gagal');
-            }
-          } catch (pollErr) {
-            networkFailures++;
-            progressLabel.textContent = currentLang === 'EN'
-              ? 'Reconnecting...'
-              : 'Menghubungkan kembali...';
-
-            if (networkFailures >= 5) {
-              throw pollErr;
-            }
-          }
-        }
-
-        if (!completed) {
-          throw new Error(
-            currentLang === 'EN'
-              ? 'Conversion took too long. Please try again.'
-              : 'Proses convert terlalu lama. Silakan coba lagi.'
-          );
-        }
+      if (!data.jobId) {
+        throw new Error('Job ID tidak ditemukan dari server');
       }
 
-      if (!result.downloadUrl) {
-        throw new Error('Hasil convert tidak ditemukan');
-      }
-
-      progressFill.style.width = '100%';
-      progressLabel.textContent = currentLang === 'EN'
-        ? 'Conversion complete.'
-        : 'Konversi selesai.';
-
-      await sleep(300);
-
-      btn.disabled = false;
-      progressWrap.classList.remove('show');
-      resultCard.classList.add('show');
-      refreshUserPlanStatus();
-      bumpCurrentMonthCount();
-
-      const sourceLabel = hasFile
-        ? 'MP3 Upload'
-        : (url.includes('soundcloud') ? 'SoundCloud' : 'YouTube');
-
-      const title = hasFile
-        ? fileName.textContent.replace('🎵 ', '')
-        : (document.getElementById('lpTitle')
-            ? document.getElementById('lpTitle').textContent
-            : 'Audio dari link');
-
-      const linkText = hasFile
-        ? fileName.textContent.replace('🎵 ', '')
-        : url;
-
-      const thumb = hasFile ? null : lastPreviewThumb;
-      const fullDownloadUrl = CONVERT_API_BASE + result.downloadUrl;
-      const resultDurLabel = result.durationSec
-        ? formatDuration(Math.round(result.durationSec))
-        : null;
-
-      const convIdMatch = result.downloadUrl.match(/\/files\/([a-f0-9]{16})\.ogg/);
-      const convId = convIdMatch ? convIdMatch[1] : null;
-
-      addHistoryEntry(
+      const meta = {
+        jobId: data.jobId,
         sourceLabel,
         title,
         linkText,
-        true,
         thumb,
-        resultDurLabel,
-        fullDownloadUrl,
-        document.getElementById('speedVal').textContent,
-        document.getElementById('ampVal').textContent,
-        document.getElementById('durVal').textContent,
+        speed: document.getElementById('speedVal').textContent,
+        ampText: document.getElementById('ampVal').textContent,
+        durText: document.getElementById('durVal').textContent,
+        savedUploaded: false
+      };
+
+      const card = addHistoryEntry(
+        sourceLabel,
+        title,
+        linkText,
+        false,
+        thumb,
         null,
+        null,
+        meta.speed,
+        meta.ampText,
+        meta.durText,
+        Date.now(),
         null,
         false,
         null,
-        convId
+        data.jobId,
+        data.status || 'queued',
+        data.progress || 0,
+        data.jobId
       );
+
+      btn.disabled = false;
+      progressWrap.classList.remove('show');
 
       document.getElementById('urlInput').value = '';
       clearUrlPreview();
       fileInput.value = '';
       fileChosen.classList.remove('show');
 
+      void pollConversionJob(card, data.jobId, meta);
+
     } catch (err) {
       console.error(err);
       btn.disabled = false;
       progressWrap.classList.remove('show');
+
       alert(
         currentLang === 'EN'
           ? 'Conversion failed: ' + err.message
           : 'Convert gagal: ' + err.message
       );
+
       refreshUserPlanStatus();
     }
   }
