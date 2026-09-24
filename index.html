@@ -1613,7 +1613,7 @@ body:before{
               <span data-i18n="label-adv-settings">Pengaturan Lanjutan</span>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
-              <span class="adv-summary" id="advSummary">Speed: 2.3x, Amplify: 0dB, Maks: 300s</span>
+              <span class="adv-summary" id="advSummary">Speed: 1x, Amplify: 0dB, Maks: 300s</span>
               <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </div>
           </div>
@@ -1622,13 +1622,12 @@ body:before{
               <div class="preset-label">Presets</div>
               <div class="preset-chips" id="presetChips">
                <span class="preset-chip" data-speed="0.8" data-amp="0" onclick="applyPreset(this,0.8)">0.8x</span>
-				<span class="preset-chip" data-speed="1" data-amp="0" onclick="applyPreset(this,1)">1x</span>
-				<span class="preset-chip" data-speed="1.3" data-amp="0" onclick="applyPreset(this,1.3)">1.3x</span>
-				<span class="preset-chip default active" data-speed="1.5" data-amp="0" onclick="applyPreset(this,1.5)">
+<span class="preset-chip" data-speed="1.3" data-amp="0" onclick="applyPreset(this,1.3)">1.3x</span>
+				<span class="preset-chip default active" data-speed="1" data-amp="0" onclick="applyPreset(this,1)>
  				 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px;">
     			<path d="M13 3L4 14h6l-1 7 9-11h-6l1-7 9-11h-6l1-7z"/>
   				</svg>
- 				 Default <b>1.5x</b>
+ 				 Default <b>1x</b>
 				</span>
 				<span class="preset-chip" data-speed="1.7" data-amp="0" onclick="applyPreset(this,1.7)">1.7x</span>
 				<span class="preset-chip" data-speed="1.8" data-amp="0" onclick="applyPreset(this,1.8)">1.8x</span>
@@ -1637,8 +1636,8 @@ body:before{
               </div>
             </div>
             <div class="slider-row">
-              <div class="sr-top"><span data-i18n="label-speed">Kecepatan Putar</span><b id="speedVal">1.5x</b></div>
- 			<input type="range" min="0.5" max="3" step="0.1" value="1.5" id="speedSlider" oninput="updateAdv(this,'speed')">
+              <div class="sr-top"><span data-i18n="label-speed">Kecepatan Putar</span><b id="speedVal">1x</b></div>
+ 			<input type="range" min="0.5" max="3" step="0.1" value="1" id="speedSlider" oninput="updateAdv(this,'speed')">
             </div>
             <div class="slider-row">
               <div class="sr-top"><span data-i18n="label-amplify">Amplify (Volume)</span><b id="ampVal">0dB</b></div>
@@ -3196,7 +3195,7 @@ async function patchConversionServer(convId, patch) {
         </div>
       </div>
      <div class="h-actions">
-        <button class="h-download-btn" onclick="downloadHistoryAudio(this)" data-download-url="${downloadUrl || ''}" ${isJobPending || !downloadUrl ? 'disabled' : ''}>
+        <button class="h-download-btn" onclick="downloadHistoryAudio(this)" data-download-url="${downloadUrl || ''}" style="display:${isJobPending || !downloadUrl ? 'none' : 'inline-flex'};" ${isJobPending || !downloadUrl ? 'disabled' : ''}>
           <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"/></svg>
           Download OGG
         </button>
@@ -3376,13 +3375,17 @@ async function patchConversionServer(convId, patch) {
       if (downloadBtn) {
         downloadBtn.disabled = false;
         downloadBtn.dataset.downloadUrl = fullDownloadUrl;
+        downloadBtn.style.display = 'inline-flex';
       }
 
       if (uploadRow) {
         uploadRow.style.display = meta && meta.savedUploaded ? 'none' : 'flex';
       }
     } else {
-      if (downloadBtn) downloadBtn.disabled = true;
+      if (downloadBtn) {
+        downloadBtn.disabled = true;
+        downloadBtn.style.display = 'none';
+      }
       if (uploadRow) uploadRow.style.display = 'none';
     }
   }
@@ -3667,6 +3670,50 @@ async function patchConversionServer(convId, patch) {
   }
 }
 
+
+  // ===== Sinkronisasi status Roblox dari /auth/me =====
+  function resolveRobloxUserId(data) {
+    const roblox = data?.roblox;
+
+    if (typeof roblox === 'string' && roblox.trim()) {
+      return roblox.trim();
+    }
+
+    if (roblox && typeof roblox === 'object') {
+      return String(
+        roblox.roblox_user_id ||
+        roblox.user_id ||
+        roblox.id ||
+        ''
+      ).trim();
+    }
+
+    return String(
+      data?.roblox_user_id ||
+      data?.robloxUserId ||
+      ''
+    ).trim();
+  }
+
+  function syncRobloxFromSession(data) {
+    const userId = resolveRobloxUserId(data);
+    const groups = Array.isArray(data?.groups) ? data.groups : [];
+
+    if (userId) {
+      updateRobloxUI(true, userId);
+      if (groups.length) renderLinkedGroups(groups);
+      return;
+    }
+
+    if (groups.length) {
+      updateRobloxUI(false, '');
+      renderLinkedGroups(groups);
+      return;
+    }
+
+    updateRobloxUI(false, '');
+  }
+
   // ===== Cek sesi login ke backend (cookie session) =====
   async function checkSession() {
   try {
@@ -3678,9 +3725,9 @@ async function patchConversionServer(convId, patch) {
       const data = await res.json();
       applyDiscordLogin(data.user);
       applyPlanStatus(data.user);
-      updateRobloxUI(!!data.roblox, data.roblox ? data.roblox.roblox_user_id : '');
 
-      enterApp(); // dipanggil duluan supaya dashboard tetap muncul walau ada error di bawah
+      enterApp();
+      syncRobloxFromSession(data); // dipanggil duluan supaya dashboard tetap muncul walau ada error di bawah
 
       try {
          renderLinkedGroups(data.groups);
@@ -3840,6 +3887,10 @@ async function applyGroupFallbackConnection(group) {
       toggle.classList.add('linked');
     }
     robloxCardIsGroupFallback = true;
+    robloxConnectedState = false;
+    robloxLabelState = '';
+    robloxConnectedState = false;
+    robloxLabelState = '';
 
     const avatarEls = document.querySelectorAll('.acct-avatar.platform-icon.roblox, .platform-icon.roblox');
     avatarEls.forEach(el => {
@@ -3998,7 +4049,24 @@ function saveAdvSettings() {
 function loadAdvSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem('dyl_adv_settings') || 'null');
-    if (!saved) return;
+    if (!saved) {
+      const speedSlider = document.getElementById('speedSlider');
+      const ampSlider = document.getElementById('ampSlider');
+      const durSlider = document.querySelector('.slider-row input[type="range"][min="30"]');
+      if (speedSlider) {
+        speedSlider.value = '1';
+        updateAdv(speedSlider, 'speed');
+      }
+      if (ampSlider) {
+        ampSlider.value = '0';
+        updateAdv(ampSlider, 'amp');
+      }
+      if (durSlider) {
+        durSlider.value = '300';
+        updateAdv(durSlider, 'dur');
+      }
+      return;
+    }
 
     const speedSlider = document.getElementById('speedSlider');
     speedSlider.value = saved.speed;
