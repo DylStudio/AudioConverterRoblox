@@ -3298,33 +3298,51 @@ async function patchConversionServer(convId, patch) {
     progressWrap.classList.add('show');
     progressFill.style.width = '10%';
 
-    const labels = currentLang === 'EN'
-      ? ['Downloading audio...', 'Analyzing format...', 'Converting to OGG...', 'Preparing result...']
-      : ['Mengunduh audio...', 'Menganalisis format...', 'Mengonversi ke OGG...', 'Menyiapkan hasil...'];
-    let labelIdx = 0;
-    progressLabel.textContent = labels[0];
-    const labelInterval = setInterval(() => {
-      labelIdx = Math.min(labelIdx + 1, labels.length - 1);
-      progressLabel.textContent = labels[labelIdx];
-      progressFill.style.width = Math.min(85, 10 + labelIdx * 25) + '%';
-    }, 3000);
-
     const speed = document.getElementById('speedSlider').value;
     const amplifyDb = document.getElementById('ampSlider').value;
     const durInput = document.querySelector('.slider-row input[type="range"][min="30"]');
     const maxDuration = durInput ? durInput.value : 300;
 
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    function updateJobProgress(status, progress) {
+      const p = Math.max(0, Math.min(100, Number(progress) || 0));
+      let label = currentLang === 'EN' ? 'Processing audio...' : 'Memproses audio...';
+
+      if (status === 'queued') {
+        label = currentLang === 'EN' ? 'Waiting in queue...' : 'Menunggu antrean...';
+        progressFill.style.width = Math.max(10, p) + '%';
+      } else if (status === 'processing') {
+        if (p < 35) {
+          label = currentLang === 'EN' ? 'Downloading audio...' : 'Mengunduh audio...';
+        } else if (p < 85) {
+          label = currentLang === 'EN' ? 'Converting to OGG...' : 'Mengonversi ke OGG...';
+        } else {
+          label = currentLang === 'EN' ? 'Preparing result...' : 'Menyiapkan hasil...';
+        }
+        progressFill.style.width = Math.max(10, Math.min(95, p)) + '%';
+      }
+
+      progressLabel.textContent = label;
+    }
+
     try {
       let res;
+
       if (hasFile) {
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
         formData.append('speed', speed);
         formData.append('amplifyDb', amplifyDb);
         formData.append('maxDuration', maxDuration);
-         res = await fetch(`${CONVERT_API_BASE}/convert`, { method: 'POST', credentials: 'include', body: formData });
+
+        res = await fetch(\`\${CONVERT_API_BASE}/convert\`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
       } else {
-        res = await fetch(`${CONVERT_API_BASE}/convert`, {
+        res = await fetch(\`\${CONVERT_API_BASE}/convert\`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -3333,12 +3351,78 @@ async function patchConversionServer(convId, patch) {
       }
 
       const data = await res.json();
-      clearInterval(labelInterval);
 
-      if (!res.ok || !data.success) throw new Error(data.error || 'Convert gagal');
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Convert gagal');
+      }
+
+      let result = data;
+
+      if (data.jobId) {
+        const jobId = data.jobId;
+        let networkFailures = 0;
+        let completed = false;
+
+        updateJobProgress(data.status || 'queued', data.progress || 0);
+
+        for (let attempt = 0; attempt < 300; attempt++) {
+          await sleep(2000);
+
+          try {
+            const statusRes = await fetch(
+              \`\${CONVERT_API_BASE}/convert/status/\${encodeURIComponent(jobId)}\`,
+              { credentials: 'include' }
+            );
+
+            const statusData = await statusRes.json();
+
+            if (!statusRes.ok || !statusData.success) {
+              throw new Error(statusData.error || 'Gagal membaca status convert');
+            }
+
+            networkFailures = 0;
+            updateJobProgress(statusData.status, statusData.progress);
+
+            if (statusData.status === 'completed') {
+              result = statusData;
+              completed = true;
+              break;
+            }
+
+            if (statusData.status === 'failed') {
+              throw new Error(statusData.error || 'Convert gagal');
+            }
+          } catch (pollErr) {
+            networkFailures++;
+            progressLabel.textContent = currentLang === 'EN'
+              ? 'Reconnecting...'
+              : 'Menghubungkan kembali...';
+
+            if (networkFailures >= 5) {
+              throw pollErr;
+            }
+          }
+        }
+
+        if (!completed) {
+          throw new Error(
+            currentLang === 'EN'
+              ? 'Conversion took too long. Please try again.'
+              : 'Proses convert terlalu lama. Silakan coba lagi.'
+          );
+        }
+      }
+
+      if (!result.downloadUrl) {
+        throw new Error('Hasil convert tidak ditemukan');
+      }
 
       progressFill.style.width = '100%';
-      await new Promise(r => setTimeout(r, 300));
+      progressLabel.textContent = currentLang === 'EN'
+        ? 'Conversion complete.'
+        : 'Konversi selesai.';
+
+      await sleep(300);
 
       btn.disabled = false;
       progressWrap.classList.remove('show');
@@ -3346,31 +3430,61 @@ async function patchConversionServer(convId, patch) {
       refreshUserPlanStatus();
       bumpCurrentMonthCount();
 
-      const sourceLabel = hasFile ? 'MP3 Upload' : (url.includes('soundcloud') ? 'SoundCloud' : 'YouTube');
-      const title = hasFile ? fileName.textContent.replace('🎵 ', '') : (document.getElementById('lpTitle') ? document.getElementById('lpTitle').textContent : 'Audio dari link');
-      const linkText = hasFile ? fileName.textContent.replace('🎵 ', '') : url;
+      const sourceLabel = hasFile
+        ? 'MP3 Upload'
+        : (url.includes('soundcloud') ? 'SoundCloud' : 'YouTube');
+
+      const title = hasFile
+        ? fileName.textContent.replace('🎵 ', '')
+        : (document.getElementById('lpTitle')
+            ? document.getElementById('lpTitle').textContent
+            : 'Audio dari link');
+
+      const linkText = hasFile
+        ? fileName.textContent.replace('🎵 ', '')
+        : url;
+
       const thumb = hasFile ? null : lastPreviewThumb;
-      const fullDownloadUrl = CONVERT_API_BASE + data.downloadUrl;
-      const resultDurLabel = data.durationSec ? formatDuration(Math.round(data.durationSec)) : null;
-      const convIdMatch = data.downloadUrl.match(/\/files\/([a-f0-9]{16})\.ogg/);
+      const fullDownloadUrl = CONVERT_API_BASE + result.downloadUrl;
+      const resultDurLabel = result.durationSec
+        ? formatDuration(Math.round(result.durationSec))
+        : null;
+
+      const convIdMatch = result.downloadUrl.match(/\/files\/([a-f0-9]{16})\.ogg/);
       const convId = convIdMatch ? convIdMatch[1] : null;
-      addHistoryEntry(sourceLabel, title, linkText, true, thumb, resultDurLabel, fullDownloadUrl,
+
+      addHistoryEntry(
+        sourceLabel,
+        title,
+        linkText,
+        true,
+        thumb,
+        resultDurLabel,
+        fullDownloadUrl,
         document.getElementById('speedVal').textContent,
         document.getElementById('ampVal').textContent,
         document.getElementById('durVal').textContent,
-        null, null, false, null, convId);
+        null,
+        null,
+        false,
+        null,
+        convId
+      );
 
-     // Kosongkan input link & file setelah convert
       document.getElementById('urlInput').value = '';
       clearUrlPreview();
       fileInput.value = '';
       fileChosen.classList.remove('show');
-     } catch (err) {
-      clearInterval(labelInterval);
+
+    } catch (err) {
       console.error(err);
       btn.disabled = false;
       progressWrap.classList.remove('show');
-      alert(currentLang === 'EN' ? 'Conversion failed: ' + err.message : 'Convert gagal: ' + err.message);
+      alert(
+        currentLang === 'EN'
+          ? 'Conversion failed: ' + err.message
+          : 'Convert gagal: ' + err.message
+      );
       refreshUserPlanStatus();
     }
   }
