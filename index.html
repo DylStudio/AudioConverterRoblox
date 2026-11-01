@@ -1907,27 +1907,27 @@ body:before{
  
       <div class="plan-box">
         <div class="plan-name">7 Days</div>
-        <div class="plan-price">Rp 50,000</div>
+        <div class="plan-price" id="price7Days">Memuat...</div>
         <div class="plan-period">for 7 days</div>
         <ul class="plan-features">
           <li><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span><b>Unlimited conversions</b>No limits, convert freely</span></li>
           <li><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span><b>Auto upload to Roblox</b>Automatic publishing</span></li>
           <li><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span><b>Priority support</b>Get help faster</span></li>
         </ul>
-        <button class="plan-cta buy" onclick="buyPlan('7 Days','Rp 50,000')">Get Started</button>
+        <button class="plan-cta buy" onclick="buyPlan('7 Days')">Get Started</button>
       </div>
  
       <div class="plan-box popular">
         <div class="plan-tag popular-tag">Popular</div>
         <div class="plan-name">30 Days</div>
-        <div class="plan-price">Rp 125,000</div>
-        <div class="plan-period">for 30 days · Best value · Save 37.5%</div>
+        <div class="plan-price" id="price30Days">Memuat...</div>
+        <div class="plan-period" id="period30Days">for 30 days · Best value</div>
         <ul class="plan-features">
           <li><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span><b>Unlimited conversions</b>No limits, convert freely</span></li>
           <li><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span><b>Auto upload to Roblox</b>Automatic publishing</span></li>
           <li><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span><b>Priority support</b>Get help faster</span></li>
         </ul>
-        <button class="plan-cta buy" onclick="buyPlan('30 Days','Rp 125,000')">Get Started</button>
+        <button class="plan-cta buy" onclick="buyPlan('30 Days')">Get Started</button>
       </div>
     </div>
   </div>
@@ -1992,46 +1992,53 @@ document.getElementById('linkPreview').classList.remove('show');
   }
  
   // ===== Upgrade plan modal =====
-  function openUpgradeModal() {
-    document.getElementById('upgradeModal').classList.add('show');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeUpgradeModal() {
-    document.getElementById('upgradeModal').classList.remove('show');
-    document.body.style.overflow = '';
-  }
-    async function buyPlan(name, price) {
-    try {
-      const res = await fetch(`${CONVERT_API_BASE}/payment/checkout`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planName: name })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Gagal membuat transaksi');
+function openUpgradeModal() {
+  document.getElementById('upgradeModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
 
-      closeUpgradeModal();
+function closeUpgradeModal() {
+  document.getElementById('upgradeModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
 
-      window.snap.pay(data.token, {
-        onSuccess: function(result) {
-          alert(currentLang === 'EN' ? 'Payment successful!' : 'Pembayaran berhasil!');
-          refreshUserPlanStatus();
-        },
-        onPending: function(result) {
-          alert(currentLang === 'EN' ? 'Waiting for your payment to complete.' : 'Menunggu pembayaran kamu selesai.');
-        },
-        onError: function(result) {
-          alert(currentLang === 'EN' ? 'Payment failed.' : 'Pembayaran gagal.');
-        },
-        onClose: function() {
-          console.log('Snap popup ditutup sebelum bayar selesai');
-        }
-      });
-    } catch (err) {
-      alert((currentLang === 'EN' ? 'Failed: ' : 'Gagal: ') + err.message);
+async function buyPlan(name) {
+  try {
+    const res = await fetch(`${CONVERT_API_BASE}/payment/checkout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planName: name })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Gagal membuat transaksi');
     }
+
+    closeUpgradeModal();
+
+    window.snap.pay(data.token, {
+      onSuccess: function(result) {
+        alert(currentLang === 'EN' ? 'Payment successful!' : 'Pembayaran berhasil!');
+        refreshUserPlanStatus();
+      },
+      onPending: function(result) {
+        alert(currentLang === 'EN' ? 'Waiting for your payment to complete.' : 'Menunggu pembayaran kamu selesai.');
+      },
+      onError: function(result) {
+        alert(currentLang === 'EN' ? 'Payment failed.' : 'Pembayaran gagal.');
+      },
+      onClose: function() {
+        console.log('Snap popup ditutup sebelum bayar selesai');
+      }
+    });
+
+  } catch (err) {
+    alert((currentLang === 'EN' ? 'Failed: ' : 'Gagal: ') + err.message);
   }
+}
 
        function applyPlanStatus(user) {
     const planBig = document.querySelector('.plan-card .stat-big');
@@ -4189,6 +4196,44 @@ updateTotalConvSub();
 
   checkSession();
   window.addEventListener('focus', refreshRobloxFromServer);
+
+		// ===== Load subscription prices from server =====
+async function loadPlans() {
+  try {
+    const res = await fetch(`${CONVERT_API_BASE}/payment/plans`);
+    if (!res.ok) throw new Error('Gagal mengambil harga paket');
+
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.plans)) {
+      throw new Error('Data paket tidak valid');
+    }
+
+    const formatRupiah = amount =>
+      'Rp ' + Number(amount).toLocaleString('id-ID');
+
+    data.plans.forEach(plan => {
+      if (plan.name === '7 Days') {
+        document.getElementById('price7Days').textContent =
+          formatRupiah(plan.amount);
+      }
+
+      if (plan.name === '30 Days') {
+        document.getElementById('price30Days').textContent =
+          formatRupiah(plan.amount);
+
+        document.getElementById('period30Days').textContent =
+          `for ${plan.days} days · Best value · Save ${plan.savePercent}%`;
+      }
+    });
+
+  } catch (err) {
+    console.error('Gagal memuat harga paket:', err);
+    document.getElementById('price7Days').textContent = 'Gagal memuat';
+    document.getElementById('price30Days').textContent = 'Gagal memuat';
+  }
+}
+
+loadPlans();
 </script>
  
 </body>
